@@ -1,0 +1,61 @@
+[
+  {
+    "size": {
+      "width": 320,
+      "height": 568
+    },
+    "result": "20/20 pruebas del mapa aprobadas · inventario ficticio",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "size": {
+      "width": 375,
+      "height": 667
+    },
+    "result": "20/20 pruebas del mapa aprobadas · inventario ficticio",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "size": {
+      "width": 390,
+      "height": 844
+    },
+    "result": "20/20 pruebas del mapa aprobadas · inventario ficticio",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "size": {
+      "width": 430,
+      "height": 932
+    },
+    "result": "20/20 pruebas del mapa aprobadas · inventario ficticio",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "size": {
+      "width": 844,
+      "height": 390
+    },
+    "result": "20/20 pruebas del mapa aprobadas · inventario ficticio",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "size": {
+      "width": 932,
+      "height": 430
+    },
+    "result": "20/20 pruebas del mapa aprobadas · inventario ficticio",
+    "errors": [],
+    "overflow": false
+  },
+  {
+    "size": "desktop",
+    "result": "20/20 pruebas del mapa aprobadas · inventario ficticio",
+    "errors": []
+  }
+]

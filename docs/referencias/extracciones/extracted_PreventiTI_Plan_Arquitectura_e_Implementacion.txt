@@ -1,0 +1,623 @@
+PROYECTO INTEGRADOR  PLAN DE DEFINICIÓN Y ALCANCE
+ESTADO: APROBADO PARA EJECUCIÓN
+PreventiTI: Gestión Preventiva de Activos
+Stack:
+ Laravel 12 + PHP 8.2 + MariaDB + Ubuntu Server
+Propuesta Integral de Mínimo Esfuerzo Viable | 
+Equipo:
+ Ramiro \(Líder/Laravel\
+\(Datos/Lógica\
+Infraestructura/Redes\
+38
+USUARIOS SIMULADOS
+78
+ACTIVOS FÍSICOS
+2 VLANs + VPN
+SEGMENTACIÓN RED
+8 TABLAS
+MODELO RELACIONAL
+12 Sem.
+CRONOGRAMA \(H1-H3\
+1. Resumen Ejecutivo y Caracterización
+PreventiTI
+ es una solución web monolítica interna para centralizar el inventario tecnológico \(físico y lógico\
+operativos mediante tickets y ejecutar un calendario determinista de mantenimiento preventivo y control de insumos consumibles. 
+Decisión Clave de
+Alcance \(Criterio de Viabilidad\
+ Se elimina cualquier dependencia de agentes residentes en clientes, escaneo SNMP/WMI, telemetría masiva,
+inteligencia artificial o control remoto. La información es cargada y auditada desde el navegador web bajo perfiles de acceso estrictos.
+1.1 Estructura Humana de la Empresa Simulada \(38 Usuarios\
+Sector / Perfil
+Cant
+.
+Descripción y Responsabilidad Operativa
+Rol en PreventiTI
+Gerencia / Administración
+3
+Dueño de sucursal, Jefe de sucursal y Director de operaciones. Control general y auditoría.
+administrador
+Sector Técnico Líder
+1
+Líder de infraestructura y soporte global. Asignación y gestión integral de fallas.
+tecnico \(Líder\
+Técnicos Especialistas
+4
+1 Técnico POS/Cajas, 1 Redes/Infraestructura, 1 Climatización/Edilicio, 1
+CCTV/Seguridad.
+tecnico
+Personal Operativo
+30
+Cajeros, vendedores, atención al cliente y personal de administración general.
+empleado
+1.2 Inventario de Activos Tecnológicos Físicos \(78 Activos\
+Categoría del Activo
+Can
+t.
+Detalle de Dispositivos
+Consumible Asociado
+Frecuencia Mant.
+Terminales & POS
+25
+Computadoras y terminales de punto de venta en salón y cajas
+No aplica
+90 días
+Equipos Portátiles
+8
+5 Notebooks técnicos de campo + 3 Notebooks de gerencia
+No aplica
+180 días
+Autoservicio
+2
+Tótems interactivos de autoservicio con impresora térmica
+Papel térmico \(Rollos\
+30 días
+Impresión Departamental
+4
+Impresoras láser departamentales y multifuncionales de red
+Tóner / Tambor
+60 días
+Cartelería Digital
+3
+Pantallas TV informativas para visualización de turnos/promos
+No aplica
+120 días
+Seguridad y CCTV
+10
+Cámaras de seguridad IP con visión nocturna
+No aplica
+90 días
+Climatización IoT
+10
+Aires acondicionados con interfaz de gestión Wi-Fi
+Filtros de aire
+60 días
+Infraestructura de Red
+8
+1 Firewall/Router perimetral + 3 Switches capa 2 + 4 APs Wi-Fi
+No aplica
+180 días
+Servidores de Cómputo
+2
+1 Servidor POSIX \(Ubuntu Server LTS\
+DS
+No aplica
+30 días
+Respaldo Eléctrico
+6
+UPS de protección para rack de servidores, cajas y puestos
+críticos
+Batería interna \(VRLA\
+90 días
+TOTAL ACTIVOS
+78
+Parque tecnológico completo cubierto en el sistema
+-
+-
+1.3 Requisitos Funcionales Esenciales \(ESRE\
+Código
+Requisito Funcional Esencial
+Prior.
+Descripción de Implementación
+RF-01
+Autenticación y Seguridad
+ALTA
+Inicio de sesión seguro con contraseñas cifradas y control de acceso vía middleware de Laravel.
+RF-02
+Gestión de Inventario
+ALTA
+Alta, modificación, baja lógica \(soft delete\
+RF-03
+Ciclo de Incidencias / Tickets
+ALTA
+Apertura por empleados, asignación técnica, cambio de estados \(Abierto, En Proceso, Resuelto\
+solución.
+RF-04
+Mantenimiento Preventivo
+ALTA
+Registro de revisiones técnicas con cálculo automático de próxima fecha sumando periodicidad.
+RF-05
+Tablero Preventivo y Alertas
+ALTA
+Alertas: Atención \(mant. <
+= 7d o consumible <
+= 20%\
+vencido o fuera de servicio\
+RF-06
+Gestión de Consumibles
+MEDIA
+Registro y actualización de nivel porcentual para tótems, impresoras, aires y UPS.
+RF-07
+Trazabilidad y Auditoría
+MEDIA
+Registro histórico inmutable de intervenciones, fechas, técnicos asignados y resoluciones aplicadas.
+Confidencial  Proyecto Integrador PreventiTI  Documento Oficial
+Página 1 de 5
+2. Arquitectura General del Sistema
+PreventiTI adopta un diseño 
+Monolítico MVC Clásico
+ complementado por una 
+Capa de Servicios \(Service Layer\
+. Esta estructura garantiza
+separación estricta de responsabilidades, alta mantenibilidad y simplicidad operativa sin microservicios ni agentes innecesarios.
+2.1 Capas de la Arquitectura Lógica
+ 
+Capa de Presentación \(UI\
+ Vistas Blade modulares, componentes semafóricos reactivos y formularios protegidos con tokens CSRF.
+ 
+Capa de Control y Ruteo:
+ Rutas HTTP protegidas por Middleware RBAC y clases FormRequest desacopladas para validación estricta.
+ 
+Capa de Servicios \(Dominio\
+ Servicios de negocio especializados \(AssetService, TicketService, MaintenanceService, AlertService\
+encapsulan la lógica.
+ 
+Capa de Datos y Persistencia:
+ Modelos Eloquent ORM con tipado estricto, relaciones declarativas y motor MySQL/MariaDB InnoDB con soporte
+transaccional ACID.
+2.2 Infraestructura Física, Servidores y Segmentación de Red
+Segmento / Host
+Subred IP
+Dispositivos Asignados
+Políticas y Reglas de Firewall \(pfSense\
+VLAN 10: Clientes/POS
+192.168.10.0/24
+25 POS, 8 Notebooks, 2 Tótems, 3 Pantallas,
+10 Cámaras, 10 ACs
+Regla PASS:
+ Hacia 192.168.20.10 solo puerto 443
+TCP \(HTTPS\
+Regla BLOCK:
+ Denegar acceso a SSH \(22\
+\(3306\
+VLAN 20: Servidores
+192.168.20.0/24
+Ubuntu Server \(.10\
+.20\
+Aislamiento:
+ Solo accesible por HTTPS desde VLAN
+10. Acceso total administrativo reservado para la VPN.
+VPN WireGuard / OVPN
+10.10.0.0/24
+1 Peer exclusivo para el Técnico Líder
+Túnel encriptado para administración remota por SSH
+\(22\
+2.3 Configuración de Servidores de Infraestructura
+Área POSIX \(Ubuntu Server 22.04 LTS\
+ Servidor Web Nginx 1.22+ y PHP 8.2-FPM.
+ Base de datos MariaDB 10.11+ \(InnoDB\
+ Grupo app_preventiti y permisos 775/664 en storage/
+.
+ Firewall UFW habilitando únicamente puertos 22 \(VPN\
+ Scripts automatizados: respaldo_preventiti.sh y healthcheck.sh
+.
+Área Microsoft \(Windows Server 2022\
+ Servicio de Directorio Activo \(AD DS\
+ 3 Unidades Organizativas \(OUs\
+ GPO de complejidad y bloqueo automático tras 3 intentos fallidos.
+ Script PowerShell export_auditoria.ps1 para reportes de seguridad.
+2.4 Organización de Carpetas y Convenciones Laravel
+ 
+Controladores:
+ app/Http/Controllers/ \(AssetController, TicketController, MaintenanceController, DashboardController\
+ 
+Validaciones Desacopladas:
+ app/Http/Requests/ \(StoreAssetRequest, StoreTicketRequest, StoreMaintenanceRequest\
+ 
+Servicios de Negocio:
+ app/Services/ \(AlertService, AssetService, TicketService, MaintenanceService\
+ 
+Modelos Eloquent:
+ app/Models/ \(User, Role, Asset, AssetCategory, Location, Ticket, Maintenance, AssetConsumable\
+2.5 Estrategia de Permisos y Middleware RBAC
+El control de acceso se implementa mediante un middleware personalizado CheckRole
+. Las rutas aplican restricciones declarativas:
+role:administrador para administración de usuarios y parámetros globales; role:administrador,tecnico para creación/edición de inventario, resolución
+técnica de tickets y mantenimientos; y role:empleado,tecnico,administrador para la apertura y consulta de incidencias sobre activos.
+PreventiTI  Documento de Arquitectura y Planificación Técnica
+Laravel 12 + MySQL + Ubuntu Server 22.04 LTS
+Confidencial  Proyecto Integrador PreventiTI  Documento Oficial
+Página 2 de 5
+3. Modelo de Base de Datos Relacional
+El modelo relacional está compuesto por 
+8 tablas normalizadas en 3FN
+ bajo el motor 
+InnoDB
+ en MySQL/MariaDB. Se aplican restricciones de
+clave foránea e índices estratégicos para garantizar consultas O\(1\
+Tabla
+Campos Clave y Tipos
+Relaciones & Cardinalidad
+Regla ON DELETE
+roles
+id \(PK\
+, nombre \(VARCHAR 50, UNIQUE\
+1 : N con usuarios
+RESTRICT
+usuarios
+id \(PK\
+, rol_id \(FK\
+, nombre
+, email \(UNIQUE\
+, password
+,
+activo \(BOOL\
+N : 1 con roles
+1 : N con reportes y mantenimientos
+RESTRICT
+categorias_activo
+id \(PK\
+, nombre \(UNIQUE\
+, requiere_consumible \(BOOL\
+1 : N con activos
+RESTRICT
+ubicaciones
+id \(PK\
+, nombre
+, sector
+1 : N con activos
+RESTRICT
+activos
+id \(PK\
+, categoria_id \(FK\
+, ubicacion_id \(FK\
+, codigo \(UQ\
+,
+serie \(UQ\
+, nombre
+, responsable
+, estado
+, periodicidad_dias
+,
+activo \(BOOL\
+N : 1 con categorias, ubicaciones
+1 : N con reportes, mantenimientos,
+consumibles
+RESTRICT \(Hacia reportes
+y mant.\
+reportes
+\(Tickets\
+id \(PK\
+, activo_id \(FK\
+, creador_id \(FK\
+, tecnico_id \(FK, null\
+,
+prioridad \(ENUM\
+, estado \(ENUM\
+, descripcion
+, solucion
+,
+fecha_cierre
+N : 1 con activos
+N : 1 con usuarios \(creador y técnico\
+RESTRICT \(Activo\
+SET NULL \(Técnico\
+mantenimientos
+id \(PK\
+, activo_id \(FK\
+, tecnico_id \(FK\
+, fecha_mantenimiento
+\(DATE\
+, proxima_fecha \(DATE\
+, detalle
+N : 1 con activos
+N : 1 con usuarios \(técnico\
+RESTRICT
+consumibles_activo
+id \(PK\
+, activo_id \(FK\
+, tipo
+, nivel_actual \(DEC 5,2\
+,
+nivel_minimo \(DEC 5,2\
+N : 1 con activos \(solo categorías
+aplicables\
+CASCADE
+3.1 Índices de Base de Datos y Optimización de Consultas
+Tabla
+Campos Indexados
+Tipo de Índice
+Justificación Técnica / Caso de Uso
+usuarios
+email
+UNIQUE
+Búsqueda instantánea O\(1\
+activos
+codigo / serie
+UNIQUE
+Garantiza unicidad de activos y escaneo rápido por código.
+activos
+categoria_id, ubicacion_id, activo
+COMPUESTO
+Optimiza filtros combinados en el inventario y listados activos.
+reportes
+estado, prioridad
+COMPUESTO
+Acelera consultas del tablero y colas de tickets abiertos.
+mantenimientos
+activo_id, proxima_fecha
+COMPUESTO
+Permite al motor de alertas consultar fechas vencidas/próximas sin full
+scan.
+consumibles_activo
+activo_id, nivel_actual
+COMPUESTO
+Filtrado directo de consumibles críticos \(
+<
+= 20%\
+3.2 Riesgos de Integridad y Mecanismos de Mitigación
+ 
+Preservación de Trazabilidad Histórica:
+ Los activos y usuarios no se eliminan físicamente. Se implementa baja lógica \(
+activo = false
+\
+DELETE RESTRICT en relaciones de reportes y mantenimientos para impedir orfandad de registros históricos.
+ 
+Cálculo Determinista de Fechas:
+ La fecha proxima_fecha se calcula forzosamente a través del MaintenanceService sumando periodicidad_dias
+,
+evitando discrepancias de entrada manual.
+ 
+Restricción de Consumibles:
+ La interfaz y el servicio validan que solo los activos cuya categoría posea requiere_consumible = true puedan
+registrar insumos.
+PreventiTI  Documento de Arquitectura y Planificación Técnica
+Laravel 12 + MySQL + Ubuntu Server 22.04 LTS
+Confidencial  Proyecto Integrador PreventiTI  Documento Oficial
+Página 3 de 5
+4. Módulos del Sistema y Matriz de Dependencias
+PreventiTI se divide en 9 módulos acoplados de forma ordenada y secuencial, garantizando que cada componente cuente con sus prerrequisitos de
+datos e infraestructura antes de su ejecución.
+Módulo
+Objetivo Principal
+Dependencias
+Complej.
+Prioridad
+Orden
+1. Autenticación
+Control de sesiones seguras y hashing de
+passwords.
+Ninguna
+Baja
+ALTA
+1
+2. Roles y Permisos
+Segregación de accesos vía RBAC y middleware de
+rutas.
+Autenticación
+Media
+ALTA
+2
+3. Inventario
+CRUD maestro de 78 activos, categorías y
+ubicaciones.
+Roles
+Media
+ALTA
+3
+4. Consumibles
+Monitoreo y actualización porcentual de insumos.
+Inventario
+Baja-Med
+MEDIA
+4
+5. Tickets / Reportes
+Ciclo de fallas: Apertura -> Asignación ->
+Resolución.
+Inventario, Roles
+Media-Alta
+ALTA
+5
+6. Mantenimiento
+Registro de revisiones y cálculo de próxima fecha.
+Inventario
+Media
+ALTA
+6
+7. Motor de Alertas
+Disparo de estados Atención \(
+<
+=7d, <
+=20%\
+Crítica.
+Mant., Consumibles
+Media-Alta
+ALTA
+7
+8. Dashboard
+Panel central con semáforo operativo, KPIs y
+métricas.
+Todos los módulos
+Media-Alta
+ALTA
+8
+9. Auditoría / Trazab.
+Historial inmutable de intervenciones y resoluciones.
+Tickets, Mant.
+Baja-Med
+MEDIA
+9
+5. Análisis Integral de Riesgos y Mitigación
+Categoría
+Riesgo Identificado
+Impacto
+Estrategia de Mitigación / Control
+1. Técnicos
+Inconsistencia en cálculo de próxima fecha por
+zonas horarias o inputs erróneos.
+Alto
+Cálculo centralizado en MaintenanceService con fechas normalizadas en
+UTC y pruebas unitarias.
+1. Técnicos
+Degradación por consultas N+1 en dashboard
+al listar 78 activos y sus relaciones.
+Medio
+Uso mandatorio de Eager Loading: Asset::with\(['category', 'consumables',
+'maintenances']\
+.
+2. Seguridad
+Inyección SQL o CSRF en carga de tickets e
+inventario.
+Alto
+Uso de Eloquent ORM parametrizado, validación en FormRequests y tokens
+@csrf en vistas.
+2. Seguridad
+Bypass de autorización accediendo por URL
+directa.
+Alto
+Middleware CheckRole a nivel de rutas y validación en método authorize\(\
+de Form Requests.
+3. Rendimiento
+Consultas pesadas no indexadas en filtros del
+dashboard.
+Medio
+Creación de índices compuestos en claves foráneas y campos clave
+\(
+estado
+, proxima_fecha
+\
+4. Académicos
+Desviación de alcance hacia complejidades no
+requeridas.
+Alto
+Respeto estricto del MVP: sin agentes SNMP, sin microservicios, sin APIs
+externas ni telemetría.
+5. Infraestructura
+Fallo de permisos en storage/ y
+bootstrap/cache/ en Ubuntu.
+Alto
+Configuración estricta del grupo app_preventiti y permisos 775/664 en
+aprovisionamiento.
+5. Infraestructura
+Bloqueo accidental de HTTPS en pfSense.
+Alto
+Orden estricto de reglas de firewall: Pass HTTPS antes de la regla Block por
+defecto.
+PreventiTI  Documento de Arquitectura y Planificación Técnica
+Laravel 12 + MySQL + Ubuntu Server 22.04 LTS
+Confidencial  Proyecto Integrador PreventiTI  Documento Oficial
+Página 4 de 5
+6. Roadmap de Desarrollo y Cronograma \(12 Semanas\
+El proyecto se ejecuta en tres hitos claramente delimitados, articulando las tareas de programación, base de datos e infraestructura en paralelo.
+Semana
+Hito
+Actividades Principales y Entregables
+Responsable Principal
+Semana 1 - 2
+H1
+Definición de requerimientos, diseño del MER \(8 tablas\
+Daniel \(BD\
+Red\
+Semana 3 - 4
+Hito 1
+Creación de proyecto Laravel base, configuración inicial de VMs Ubuntu y Windows Server.
+Entrega Hito 1
+.
+Ramiro \(Líder\
+Semana 5 - 6
+H2
+Seeders con 78 activos y 38 usuarios. CRUD de inventario completo y módulo de
+tickets/reportes.
+Daniel / Ramiro
+Semana 7 - 8
+H2
+Configuración de reglas en pfSense, scripts Bash/PowerShell y desarrollo del módulo de
+mantenimientos.
+Nacho / Ramiro
+Semana 9
+Hito 2
+Pruebas de filtrado de red, generación de diagramas UML y tablero preventivo con alertas.
+Entrega Hito 2
+.
+Todo el equipo
+Semana 10 - 11
+H3
+Auditoría técnica de base de datos, optimización de índices, pruebas de
+respaldo/restauración y manuales.
+Daniel / Nacho / Ramiro
+Semana 12
+Hito 3
+Ensayo de defensa técnica, verificación integral de casos de prueba y presentación final de
+cierre.
+Todo el equipo
+6.1 Plan de Pruebas de Calidad \(Casos de Validación\
+Caso de Prueba
+Condición de Entrada
+Resultado Esperado
+Área Técnica
+CP-01: Control de Acceso
+Empleado intenta acceder por URL a
+/admin/activos/crear
+.
+Middleware rechaza la petición y devuelve HTTP 403
+Prohibido.
+Laravel / Auth
+CP-02: Bajas Lógicas
+Técnico da de baja un POS averiado.
+Activo cambia a activo = false
+; tickets y mantenimientos
+persisten intactos.
+Base de Datos
+CP-03: Alerta Consumible
+Tótem 1 registra nivel de papel térmico al
+15%.
+El tablero dispara automáticamente alerta visual amarilla de
+Atención.
+Lógica Negocio
+CP-04: Bloqueo de Red
+Host en VLAN 10 intenta conectar por
+SSH \(puerto 22\
+pfSense descarta los paquetes y registra el evento de bloqueo
+en el log.
+Redes / pfSense
+CP-05: Respaldo POSIX
+Ejecución del script respaldo_preventiti.sh
+vía cron.
+Generación íntegra de archivo .tar.gz con dump SQL en
+/var/backups/
+.
+Sistemas Linux
+7. Recomendaciones Técnicas de Ingeniería
+1. 
+Eager Loading Mandatorio:
+ En listados y dashboard, utilizar siempre with\(['categoria', 'consumibles', 'mantenimientos']\
+de consultas N+1.
+2. 
+Manejo de Transacciones ACID:
+ En acciones compuestas \(ej. resolución de ticket que actualiza consumibles o registra mantenimiento\
+encapsular con DB::transaction\(\
+.
+3. 
+Hardening de Permisos POSIX:
+ En Ubuntu Server 22.04 LTS, asignar grupo app_preventiti y permisos 775 a directorios y 664 a archivos dentro
+de storage/ y bootstrap/cache/
+.
+4. 
+Reglas de Red Deterministas:
+ Validar con evidencias de capturas de paquetes \(
+tcpdump
+\
+443 TCP del servidor web.
+PreventiTI  Documento de Arquitectura y Planificación Técnica
+Laravel 12 + MySQL + Ubuntu Server 22.04 LTS
+Confidencial  Proyecto Integrador PreventiTI  Documento Oficial
+Página 5 de 5

@@ -1,0 +1,108 @@
+@startuml
+' PreventiTI - Topología de red vigente
+' Importar en draw.io desde: Organizar > Insertar > Avanzado > PlantUML
+
+title PreventiTI - Topología de red aprobada
+
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 55
+skinparam ranksep 65
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #475569
+skinparam ArrowThickness 1.4
+skinparam packageStyle rectangle
+skinparam note {
+  BackgroundColor #FFF7D6
+  BorderColor #C58A00
+  FontColor #3F2D00
+}
+
+cloud "Internet\nRed pública" as INTERNET #E0F2FE
+rectangle "ONT / router del proveedor\nWAN: asignada por ISP\nIP pública: por relevar" as ISP #F1F5F9
+
+node "pfSense CE 2.7\nFirewall y enrutamiento\n\nVLAN 10: 192.168.10.1/24\nVLAN 20: 192.168.20.1/24\nWireGuard: 10.10.0.1/24" as FW #FEE2E2
+
+rectangle "Técnico líder\nPeer WireGuard\n10.10.0.2/32" as TECH #FFEDD5
+
+node "Switch principal capa 2\nRack A\nGestión propuesta: 192.168.20.30" as SW1 #EDE9FE
+
+node "Switch secundario capa 2\nRack B / cajas\nGestión propuesta: 192.168.20.31" as SW2 #EDE9FE
+
+node "Switch de distribución capa 2\nSalón\nGestión propuesta: 192.168.20.32" as SW3 #EDE9FE
+
+node "Ubuntu Server 22.04 LTS\n192.168.20.10/24\nGateway: 192.168.20.1" as UBUNTU #DBEAFE {
+  rectangle "Nginx + PHP-FPM + Laravel\nHTTPS TCP/443\nNombre: preventiti.local" as APP #EFF6FF
+  database "MariaDB 10.11+\nTCP/3306 local" as DB #EFF6FF
+  APP --> DB : conexión local
+}
+
+node "Windows Server 2022\nActive Directory DS\n192.168.20.20/24\nGateway: 192.168.20.1" as WINDOWS #DBEAFE
+
+rectangle "Terminales y cajas\nVLAN 10 - Clientes/POS\nDHCP: 192.168.10.50-200\nGateway: 192.168.10.1" as POS #DCFCE7
+
+rectangle "Puestos cableados y portátiles\nVLAN 10 - Operación\nDHCP: 192.168.10.50-200\nGateway: 192.168.10.1" as WIRED #DCFCE7
+
+node "4 Access Points Wi-Fi 6\nGestión propuesta en VLAN 20\nNorte: 192.168.20.40\nSur: 192.168.20.41\nEspera/turnos: 192.168.20.42\nGerencia/adm.: 192.168.20.43" as APS #EDE9FE
+
+cloud "Clientes Wi-Fi operativos\nSSID en VLAN 10\nDHCP: 192.168.10.50-200\nGateway: 192.168.10.1" as WIFI #DCFCE7
+
+rectangle "Otros equipos de operación\nCCTV / impresión / IoT\nVLAN 10\nDHCP o reservas existentes" as DEVICES #DCFCE7
+
+INTERNET -down-> ISP : enlace del proveedor
+ISP -down-> FW : WAN\nWireGuard UDP/51820
+TECH -right-> FW : túnel cifrado\nUDP/51820
+
+FW -down-> SW1 : troncal 802.1Q\nVLAN 10 + VLAN 20
+
+SW1 -down-> SW2 : uplink\nVLAN 10 + gestión VLAN 20
+SW1 -down-> UBUNTU : acceso VLAN 20
+SW1 -down-> WINDOWS : acceso VLAN 20
+SW1 -down-> SW3 : uplink\nVLAN 10 + gestión VLAN 20
+
+SW2 -down-> POS : puertos de acceso VLAN 10
+SW3 -down-> WIRED : puertos de acceso VLAN 10
+SW3 -down-> APS : gestión VLAN 20\nSSID operativo VLAN 10
+SW3 -down-> DEVICES : puertos de acceso VLAN 10
+APS -down-> WIFI : Wi-Fi operativo VLAN 10
+
+FW ..> UBUNTU : administración SSH TCP/22\nsolo mediante VPN autorizada
+
+SW2 -[hidden]right- UBUNTU
+UBUNTU -[hidden]right- WINDOWS
+WINDOWS -[hidden]right- SW3
+WIRED -[hidden]right- APS
+APS -[hidden]right- DEVICES
+
+note right of FW
+  POLÍTICA INTER-VLAN APROBADA
+  1. PASS TCP/443
+     192.168.10.0/24 -> 192.168.20.10
+  2. BLOCK TCP/22 y TCP/3306
+     192.168.10.0/24 -> 192.168.20.0/24
+
+  Los controles de WAN y WireGuard
+  permiten operar la VPN y no cambian
+  estas dos reglas inter-VLAN.
+end note
+
+note bottom of POS
+  DHCP VLAN 10
+  Pool: 192.168.10.50-192.168.10.200
+  Gateway: 192.168.10.1
+  DNS: conservar el valor del laboratorio aprobado;
+  la IP no está declarada en el repositorio.
+end note
+
+legend bottom left
+  |= Estado |= Interpretación |
+  |<#DBEAFE> Vigente | Servidores e IP definidas |
+  |<#DCFCE7> Vigente | Clientes y rango DHCP definidos |
+  |<#EDE9FE> Propuesta | IP de gestión de switches/AP por verificar |
+  |<#FEE2E2> Vigente | pfSense y segmentación aprobada |
+endlegend
+
+@enduml

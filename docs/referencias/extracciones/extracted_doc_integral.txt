@@ -1,0 +1,1175 @@
+PROYECTO INTEGRADOR FINAL
+  
+|
+  
+DOCUMENTACIÓN TÉCNICA Y PLAN MAESTRO
+INTEGRAL
+ESTADO: APROBADO PARA
+EJECUCIÓN
+PreventiTI: Gestión Preventiva de Activos
+Tecnológicos
+Documento Maestro de Arquitectura, Requerimientos de Software \(ESRE\
+Redes Seguras y Cumplimiento de Hitos Académicos
+Equipo Desarrollador:
+Ramiro Rebello, Daniel Sanz, Ignacio \(Nacho\
+de la Rosa
+Stack Central:
+Laravel 12 \(PHP 8.2+\
+Ubuntu LTS
+Alcance Poblacional:
+38 Usuarios Simulados \(4 Perfiles / 3 Roles
+RBAC\
+Parque de Activos:
+78 Activos Físicos distribuidos en 10
+Categorías
+Infraestructura Red:
+2 VLANs \(Clientes y Servidores\
+WireGuard
+Cronograma Global:
+12 Semanas distribuidas en 3 Meses
+calendario \(3 Hitos\
+1. Presentación del Equipo y Roles de los Integrantes
+El presente proyecto integrador es concebido, desarrollado y defendido por un equipo multidisciplinario de 3 integrantes con
+responsabilidades nítidamente segregadas para garantizar rigor y cobertura técnica en cada área académica:
+Integrante
+Rol Oficial en el Proyecto
+Área de Especialidad
+Responsabilidades Operativas y Entregables Clave
+Ramiro Rebello
+Coordinador General &
+Líder de Desarrollo Web
+Programación Web MVC,
+Arquitectura Laravel
+ Arquitectura monolítica del sistema bajo Laravel 12.x y PHP 8.2 con
+tipado estricto.
+ Diseño de controladores desacoplados, middleware RBAC de
+seguridad \(CheckRole\
+ Implementación de la Capa de Servicios \(AlertService,
+TicketService, MaintenanceService\
+ Vistas Blade con componentes dinámicos y redacción del Manual
+de Usuario final.
+Daniel Sanz
+Especialista en Datos &
+Lógica de Negocio
+Bases de Datos
+Relacionales,
+Modelo de Persistencia
+ Modelado conceptual y lógico MER/DER de las 8 tablas
+normalizadas.
+ Ejecución de scripts DDL, claves primarias, foráneas e integridad
+referencial en MariaDB.
+ Construcción de Seeders para poblar los 78 activos y 38 usuarios
+reales de prueba.
+ Optimización de consultas mediante índices B-Tree, Triggers en BD
+y plan de respaldo DRP.
+Ignacio \(Nacho\
+de la Rosa
+Especialista en Infraestructura,
+Redes y Ciberseguridad
+Sistemas Operativos POSIX,
+Microsoft & Redes
+Perimetrales
+ Segmentación de red en 2 VLANs sobre firewall virtual pfSense con
+2 reglas de filtrado y VPN WireGuard.
+ Aprovisionamiento de VM Ubuntu Server 22.04 LTS \(Nginx,
+PHP-FPM, UFW, scripts Bash cron de backup y healthcheck\
+ Despliegue de VM Windows Server 2022 con Active Directory DS, 3
+OUs y directivas GPO de contraseñas.
+ Script PowerShell \(export_auditoria.ps1\
+perimetral con Nmap.
+2. Nombre del Software, Descripción Operativa y Funcionamiento
+Nombre Oficial:
+ 
+PreventiTI: Gestión Preventiva de Activos Tecnológicos
+ \(identificado en la documentación de cátedra como 
+PrevenTI
+\
+Qué hace el sistema:
+ Centraliza el inventario físico y lógico de 78 activos, administra el ciclo de vida de fallas mediante tickets de atención
+\(Abierto -> En Proceso -> Resuelto\
+alertas visuales deterministas.
+Cómo funciona:
+ Funciona como aplicación web monolítica en Laravel 12 con persistencia en MariaDB. Los usuarios operan a través del
+navegador web según su rol \(Administrador, Técnico o Empleado\
+su equipo. Los técnicos efectúan el triaje, diagnostican y documentan la solución. En paralelo, el sistema proyecta la próxima fecha de
+mantenimiento técnico de cada equipo mediante la fórmula matemática proxima_fecha = fecha_mantenimiento + periodicidad_dias
+, y
+monitorea el nivel remanente \(0 a 100%\
+tóner, papel térmico, filtros y baterías\
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 1 de 9
+Decisión Estratégica de Alcance \(Criterio de Mínimo Esfuerzo Viable - MVP\
+Para maximizar la viabilidad técnica y el éxito académico, se elimina deliberadamente cualquier dependencia de agentes residentes en clientes,
+escaneos masivos SNMP/WMI o telemetría automática de red. Toda la información es gestionada, trazada y auditada desde la interfaz web por el
+personal bajo perfiles de acceso claramente definidos \(RBAC\
+aplicaciones móviles nativas y algoritmos complejos de Machine Learning.
+3. Problema que Resuelve
+En empresas con infraestructura tecnológica distribuida \(puntos de venta, terminales de autoservicio, servidores, CCTV y climatización\
+gestión suele operar bajo un paradigma reactivo deficiente:
+ 
+Operación puramente reactiva:
+ Soporte técnico actúa únicamente cuando el equipo falló o quedó inoperativo, frenando la facturación y
+la atención al cliente.
+ 
+Inventarios desactualizados y planillas aisladas:
+ Registros estáticos en hojas de cálculo sin sincronización, desconociendo ubicación
+real, estado físico y responsable.
+ 
+Pérdida de trazabilidad histórica:
+ Inexistencia de un histórico confiable que vincule qué fallas ocurrieron, qué componentes se
+reemplazaron y qué técnico intervino.
+ 
+Paradas intempestivas por insumos agotados:
+ Carencia de control continuo sobre bobinas de papel en tótems/cajas, cartuchos de
+tóner, filtros y baterías de UPS.
+ 
+Falta de métricas de gestión:
+ Ausencia de visibilidad gerencial sobre fallas recurrentes y cumplimiento del plan preventivo.
+4. Solución Propuesta
+PreventiTI transforma la gestión caótico-reactiva en un modelo proactivo, planificado y auditable mediante:
+ 
+Repositorio Único de Activos:
+ Registro de 78 equipos con código patrimonial, serie, ubicación y responsable, con bajas lógicas \(soft
+deletes\
+ 
+Mesa de Incidencias con Triaje Dinámico:
+ Flujo formal de tickets con estados controlados y documentación obligatoria de diagnósticos
+y soluciones técnicas.
+ 
+Mantenimiento Preventivo Parametrizado:
+ Calendarización automatizada según periodicidad en días establecida por categoría \(30 a
+180 días\
+ 
+Supervisión Continua de Insumos Críticos:
+ Monitoreo porcentual del volumen remanente \(0-100%\
+ 
+Tablero Ejecutivo con Semáforo Operativo:
+ Vista global con alertas visuales de Atención \(amarilla\
+roja\
+paradas.
+5. Beneficiarios del Sistema
+Sector / Actor
+Perfil de Usuario
+Beneficios Directos Obtenidos
+Gerencia y Dirección
+\(3 Usuarios\
+Dueño, Jefe de Sucursal, Director
+Operativo.
+Rol: Administrador
+ Visibilidad en tiempo real del estado de salud de toda la infraestructura.
+ Reducción de costos por paradas no programadas y extensión de vida útil de
+activos.
+ Acceso a métricas consolidadas, auditoría de técnicos y control patrimonial
+fidedigno.
+Área Técnica y Soporte
+\(5 Usuarios\
+1 Técnico Líder + 4 Especialistas \(POS,
+Red, Clima, CCTV\
+Rol: Técnico
+ Supresión de urgencias caóticas mediante alertas preventivas con 7 días de
+anticipación.
+ Distribución equitativa y ordenada de tickets según especialidad técnica.
+ Registro histórico inalterable de reparaciones para consulta ante fallas
+repetitivas.
+ Acceso administrativo seguro y exclusivo a servidores a través de VPN
+WireGuard.
+Personal Operativo
+\(30 Usuarios\
+Cajeros, vendedores de salón, atención
+al cliente y adm.
+Rol: Empleado
+ Canal web ágil para reportar fallas en terminales o periféricos de su puesto de
+trabajo.
+ Reducción de tiempos muertos y certidumbre sobre el estado de resolución de
+sus tickets.
+Clientes Finales
+\(Público Externo\
+Clientes que acuden a la sucursal
+comercial.
+ Atención fluida sin interrupciones por terminales de cobro o tótems fuera de
+servicio.
+ Impresión garantizada de tickets de turno y comprobantes de pago.
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 2 de 9
+6. Implementación Técnica, Infraestructura de Servidores y Redes
+La arquitectura física y de redes se estructura sobre un laboratorio virtualizado seguro y reproducible:
+Componente
+Tecnología / Software
+Especificación Virtual / Configuración de Seguridad
+Servidor Web y BD
+\(Área POSIX\
+Ubuntu Server 22.04 LTS
+Nginx 1.22+
+PHP 8.2-FPM
+MariaDB 10.11+ LTS
+ IP: 192.168.20.10 en VLAN 20. VM: 2 vCPU, 4 GB RAM, 30 GB SSD.
+ Grupo del sistema: app_preventiti con permisos 775/664 en storage/
+.
+ Firewall UFW habilitando exclusivamente puertos 22 \(SSH vía VPN\
+HTTPS\
+ Scripts Bash automatizados: respaldo_preventiti.sh \(backup diario con cron a
+/var/backups/
+\
+auditoría de disco y memoria\
+Servidor de Directorio
+\(Área Microsoft\
+Windows Server 2022
+Active Directory DS
+DNS Server
+PowerShell 5.1+
+ IP: 192.168.20.20 en VLAN 20. VM: 2 vCPU, 4 GB RAM, 40 GB SSD.
+ Estructura de Dominio con 3 Unidades Organizativas \(OUs\
+Administradores
+, 
+Técnicos
+,
+Empleados
+.
+ Directivas GPO de seguridad: complejidad de contraseñas y bloqueo de cuenta tras 3
+intentos fallidos consecutivos.
+ Script PowerShell: export_auditoria.ps1 para extracción y reporte de logs de eventos de
+seguridad.
+Firewall Perimetral
+y Conectividad
+pfSense CE 2.7 o
+OPNsense / Router Linux
+ VM: 1 vCPU, 1 GB RAM con 2 interfaces de red virtuales.
+ 
+VLAN 10 \(Clientes/POS\
+ Subred 192.168.10.0/24 \(25 POS, 8 Notebooks, 2 Tótems, 3
+Pantallas, 10 Cámaras, 10 ACs\
+ 
+VLAN 20 \(Servidores\
+ Subred 192.168.20.0/24 \(Ubuntu Server .10 y Windows Server
+.20\
+ 
+VPN WireGuard:
+ Subred 10.10.0.0/24 con 1 Peer asignado con exclusividad al Técnico
+Líder.
+ 
+Regla 1 \(PASS\
+ Tráfico desde VLAN 10 hacia 192.168.20.10:443 \(HTTPS\
+ 
+Regla 2 \(BLOCK\
+ Denegar acceso desde VLAN 10 hacia SSH \(puerto 22\
+\(puerto 3306\
+Entorno de Desarrollo
+de la Aplicación
+Laravel 12.x / PHP 8.2+
+Composer, NPM, Git
+VS Code / DBeaver
+ Tipado estricto \(
+declare\(strict_types=1\
+\
+ Vistas dinámicas con Blade Templates y componentes reutilizables.
+ Protección integrada contra ataques CSRF, SQL Injection \(Eloquent ORM\
+7. Resultado Esperado
+La puesta en producción simulada de PreventiTI y su arquitectura persigue objetivos cuantitativos y cualitativos verificables:
+ 
+Disponibilidad del Parque Tecnológico:
+ Tasa operativa mayor al 
+98.5%
+ en terminales de cobro, tótems y equipos de infraestructura de
+red.
+ 
+Cero Paradas por Consumibles Agotados:
+ Erradicación total de paradas operativas por falta de papel térmico, tóner o fallas de batería
+en UPS.
+ 
+Rendimiento y Tiempos de Respuesta:
+ Latencia inferior a 
+2 segundos
+ en consultas de inventario, carga de tickets y renderizado del
+tablero con alertas.
+ 
+Resiliencia y Continuidad \(DRP\
+ Procedimiento de respaldo y recuperación de desastres probado y documentado, permitiendo
+restaurar la base de datos y la aplicación en menos de 
+15 minutos
+.
+ 
+Blindaje Perimetral Verificado:
+ Comprobación mediante escaneo con Nmap de que la VLAN 10 tiene bloqueados los puertos SSH \(22\
+MySQL \(3306\
+443\
+ 
+Defensa Académica Exitosa:
+ Demostración práctica en vivo de los 5 casos de prueba funcionales \(CP-01 a CP-05\
+documental completo.
+Métrica SLA
+Disponibilidad: >= 98.5%
+Respuesta Web: < 2 seg.
+Seguridad Perimetral
+2 Reglas en pfSense \(Pass 443 / Block 22,
+3306\
+VPN WireGuard administrativa exclusiva
+Resiliencia / DRP
+Backups diarios automáticos vía cron
+Restauración de BD y storage en < 15 min
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 3 de 9
+8. Cumplimiento de Hitos Académicos en Referencia a Cada Área Disciplinar
+El proyecto se articula en tres hitos evaluativos secuenciales a lo largo de 12 semanas. La siguiente matriz consolida los requerimientos
+formales de la cátedra por cada asignatura y cómo son satisfechos y evidenciados por el equipo:
+Área Disciplinar / Materia
+Hito 1: Base y Viabilidad
+\(Semanas 1 a 4\
+Hito 2: Avance Funcional
+\(Semanas 5 a 9\
+Hito 3: Optimización y Cierre
+\(Semanas 10 a 12\
+Gestión de Proyecto y
+Metodología
+Resp.: Daniel / Ramiro /
+Nacho
+ Documento formal de alcance y
+limitaciones.
+ Análisis de factibilidad cuádruple.
+ Catálogo ESRE con 78 activos y 38
+usuarios.
+ Cronograma inicial con hitos.
+ Seguimiento y análisis de desvíos.
+ Matriz de riesgos actualizada.
+ Diagramas UML \(Casos de Uso,
+Clases, Secuencia\
+ Plan de pruebas unitarias.
+ Documento final consolidado.
+ Manual de Usuario ilustrado paso a
+paso.
+ Manual Técnico de Infraestructura.
+ Lecciones aprendidas y preparación
+de defensa.
+Programación Web MVC
+\(Laravel / PHP 8.2\
+Resp.: Ramiro Rebello
+ Estructura Laravel 12 inicializada.
+ Conexión funcional con MariaDB.
+ Rutas web, autenticación y sesiones.
+ Esqueleto navegable del sitio.
+ CRUD completo de 78 activos con
+bajas lógicas.
+ Validaciones FormRequests.
+ Flujo de tickets \(Apertura, Asignación,
+Cierre\
+ Pruebas unitarias de flujo aprobadas.
+ Flujo integrado completo end-to-end.
+ Tablero con alertas preventivas
+reactivas.
+ Seguridad contra ataques CSRF y
+XSS.
+ Ejecución de pruebas integrales.
+Bases de Datos Relacionales
+\(MariaDB 10.11+\
+Resp.: Daniel Sanz
+ MER conceptual y lógico normalizado
+\(8 tablas\
+ Esquema físico DDL creado en
+MariaDB.
+ Tipos de datos óptimos y claves
+primarias/foráneas.
+ Migraciones y Seeders ejecutados con
+los 78 activos y 38 usuarios reales.
+ Consultas relacionales operativas
+sobre datos poblados.
+ Optimización con índices B-Tree
+estratégicos.
+ Trigger en motor para auditoría
+automática.
+ Prueba de recuperación y restauración
+\(DRP\
+Redes, Conectividad y
+Ciberseguridad
+Resp.: Ignacio de la Rosa
+ Diseño de topología de 2 VLANs.
+ Mapa de direccionamiento IP.
+ Diseño de túnel VPN WireGuard y
+análisis de riesgos perimetrales.
+ Firewall pfSense operativo con 2
+reglas activas \(Pass HTTPS / Block
+SSH y MySQL\
+ VPN WireGuard conectada.
+ Reporte de escaneo de puertos con
+Nmap.
+ Capturas de tráfico con tcpdump/logs
+evidenciando tráfico permitido y
+bloqueado.
+ Validación de acceso VPN exclusivo
+del Técnico Líder y defensa de
+seguridad.
+Sistemas Operativos POSIX
+\(Ubuntu Server LTS\
+Resp.: Ignacio de la Rosa
+ VM Ubuntu Server 22.04 LTS
+desplegada.
+ Usuarios y grupo app_preventiti
+creados.
+ Script usuarios_permisos.sh con
+permisos 775/664 en storage/.
+ Pila Nginx + PHP 8.2-FPM operativa.
+ Firewall local UFW \(puertos 22 y 443\
+ Script Bash respaldo_preventiti.sh
+automatizado con cron diario.
+ Script de auditoría de salud
+\(
+healthcheck.sh
+: CPU, RAM y disco\
+ Restauración práctica de archivos de
+la aplicación.
+ Checklist de hardening final.
+Sistemas Operativos
+Microsoft
+\(Windows Server 2022\
+Resp.: Ignacio de la Rosa
+ VM Windows Server 2022
+aprovisionada.
+ Servicio de Dominio Active Directory
+DS.
+ 3 Unidades Organizativas
+\(Administradores, Técnicos,
+Empleados\
+ GPO de contraseñas complejas y
+bloqueo tras 3 intentos fallidos aplicada.
+ Script PowerShell
+\(
+export_auditoria.ps1
+\
+eventos.
+ Checklist de endurecimiento de
+Windows Server.
+ Exportación y análisis de bitácora de
+auditoría.
+ Reporte de conclusiones de accesos y
+perfiles.
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 4 de 9
+9. Breve Descripción de la Estructura del Proyecto de Software
+PreventiTI adopta un patrón arquitectónico 
+Monolítico MVC \(Modelo - Vista - Controlador\
+ robusto, reforzado mediante una 
+Capa de
+Servicios \(Service Layer\
+ que encapsula las reglas del negocio e impide el antipatrón de controladores sobrecargados \(
+Fat Controllers
+\
+flujo de procesamiento se desacopla en seis capas:
+1. 
+Capa de Presentación \(UI\
+ Plantillas Blade modulares con componentes reutilizables \(
+x-layout
+, x-alert-badge
+, x-table
+\
+responsive con Bootstrap.
+2. 
+Capa de Entrada y Seguridad:
+ Servidor Nginx \(puerto 443 SSL/TLS\
+autenticación auth
+,
+roles CheckRole
+, protección VerifyCsrfToken
+\
+3. 
+Capa de Controladores:
+ Form Requests dedicados \(validación aislada de datos de entrada\
+orquestación.
+4. 
+Capa de Servicios / Dominio:
+ Clases especializadas con la lógica pura: AssetService
+, TicketService
+, MaintenanceService
+,
+ConsumableService y AlertService
+.
+5. 
+Capa de Acceso a Datos:
+ Eloquent ORM con tipado estricto, relaciones declaradas \(1:N, N:1\
+Eager Loading
+\(
+Asset::with\(...\
+\
+6. 
+Capa de Persistencia:
+ Motor relacional MariaDB 10.11+ bajo motor InnoDB, garantizando transacciones atómicas y propiedades ACID.
+Organización Estándar de Carpetas y Código Fuente \(Laravel\
+app/
+|-- 
+Http/Controllers/
+ \(AuthenticatedSessionController, AssetController, TicketController, MaintenanceController,
+ConsumableController, DashboardController\
+|-- 
+Http/Middleware/
+ \(CheckRole.php  control de acceso por roles RBAC parametrizable en rutas\
+|-- 
+Http/Requests/
+ \(StoreAssetRequest, UpdateAssetRequest, StoreTicketRequest, StoreMaintenanceRequest,
+UpdateConsumableLevelRequest\
+|-- 
+Models/
+ \(Role, User, AssetCategory, Location, Asset, Ticket, Maintenance, AssetConsumable\
+\\-- 
+Services/
+ \(AlertService, AssetService, TicketService, MaintenanceService\
+database/
+ |-- 
+migrations/
+ \(8 migraciones DDL con restricciones e índices\
+|
+  \\-- 
+seeders/
+ \(Poblado de 78 activos y 38
+usuarios\
+resources/views/
+ \(Vistas Blade modulares organizadas por módulo: auth, activos, tickets, mantenimientos, dashboard\
+Modelo de Datos Relacional \(8 Tablas en MariaDB\
+Tabla
+Propósito
+Campos Clave / Tipos
+Relaciones & Integridad Referencial
+roles
+Perfiles del sistema
+id \(PK\
+VARCHAR UNIQUE\
+1:N con usuarios \(ON DELETE RESTRICT\
+usuarios
+38 usuarios simulados
+id \(PK\
+FK\
+UNIQUE\
+password \(Hash\
+BOOL\
+N:1 con roles
+; 1:N con reportes y
+mantenimientos
+categorias_activo
+10 familias de equipos
+id \(PK\
+VARCHAR UNIQUE\
+requiere_consumible \(BOOL\
+1:N con activos \(ON DELETE RESTRICT\
+ubicaciones
+Sectores físicos de planta
+id \(PK\
+1:N con activos \(ON DELETE RESTRICT\
+activos
+Inventario de 78 equipos
+id \(PK\
+FK\
+FK\
+codigo \(UNIQUE\
+UNIQUE\
+responsable, estado, periodicidad_dias, activo
+\(BOOL\
+N:1 con categorias_activo
+, ubicaciones
+; 1:N
+con reportes
+, mantenimientos
+,
+consumibles_activo
+reportes
+Tickets de incidencias
+id \(PK\
+FK\
+FK\
+tecnico_id \(FK null\
+ENUM\
+\(ENUM\
+N:1 con activos \(RESTRICT\
+\(creador RESTRICT, técnico SET NULL\
+mantenimientos
+Bitácora de revisiones
+id \(PK\
+FK\
+FK\
+fecha_mantenimiento, proxima_fecha, detalle
+N:1 con activos \(RESTRICT\
+\(RESTRICT\
+consumibles_activo
+Insumos de equipos
+id \(PK\
+FK\
+\(DECIMAL\
+DECIMAL\
+N:1 con activos \(ON DELETE CASCADE\
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 5 de 9
+10. Especificación de Funcionalidades, Requisitos y Reglas de Negocio
+10.1 Estructura del Inventario Simulado \(78 Activos Físicos en 10 Categorías\
+Categoría del Activo
+Cant.
+Detalle de Equipos Representados
+Consumible Asociado
+Periodicidad
+Mant.
+Terminales & POS
+25
+Computadoras y terminales de punto de venta en salón y cajas
+No aplica
+90 días
+Equipos Portátiles
+8
+5 Notebooks de técnicos de campo + 3 Notebooks de gerencia
+No aplica
+180 días
+Autoservicio
+2
+Tótems interactivos de autoservicio con miniprinter térmica
+Papel térmico \(Rollos\
+30 días
+Impresión Departamental
+4
+Impresoras láser departamentales y multifuncionales de red
+Tóner / Tambor
+60 días
+Cartelería Digital
+3
+Pantallas TV informativas para visualización de turnos y
+promociones
+No aplica
+120 días
+Seguridad y CCTV
+10
+Cámaras de seguridad IP con visión nocturna y PoE
+No aplica
+90 días
+Climatización IoT
+10
+Aires acondicionados con interfaz de gestión Wi-Fi en salón y
+rack
+Filtros de aire
+60 días
+Infraestructura de Red
+8
+1 Firewall/Router perimetral + 3 Switches capa 2 + 4 Access
+Points Wi-Fi
+No aplica
+180 días
+Servidores de Cómputo
+2
+1 Servidor POSIX \(Ubuntu Server LTS\
+\(AD DS\
+No aplica
+30 días
+Respaldo Eléctrico
+6
+UPS de protección para rack de servidores, cajas y puestos
+críticos
+Batería interna \(VRLA\
+90 días
+TOTAL ACTIVOS
+78
+Total general de equipamiento tecnológico administrado
+4 Insumos Críticos
+100% Cubierto
+10.2 Catálogo de Requisitos Funcionales \(RF-01 a RF-12\
+ID
+Requisito Funcional
+Descripción y Criterio de Verificación
+Rol Permitido
+Prioridad
+RF-01
+Autenticación y Seguridad
+El sistema valida credenciales registradas, gestiona sesiones y
+bloquea intentos inválidos.
+Todos
+ALTA
+RF-02
+CRUD de Activos
+Creación, edición, consulta y baja lógica \(soft delete\
+activos sin romper histórico.
+Administrador
+ALTA
+RF-03
+Consulta de Inventario
+Visualización de fichas técnicas con estado, responsable asignado
+y mantenimientos.
+Técnico / Admin
+ALTA
+RF-04
+Creación de Incidencias
+Registro de fallas asociadas a un activo detallando urgencia y
+descripción del problema.
+Empleado / Técnico
+ALTA
+RF-05
+Gestión de Incidencias
+Triaje, cambio de estado \(Abierto a En Proceso\
+de diagnóstico técnico.
+Técnico
+ALTA
+RF-06
+Cierre de Incidencias
+Documentación de la solución técnica aplicada y cambio de estado
+a Resuelto/Cerrado.
+Técnico
+ALTA
+RF-07
+Registro Mantenimiento
+Guardado de inspección técnica y cálculo automático forzado de la
+próxima fecha según periodicidad.
+Técnico
+ALTA
+RF-08
+Control de Consumibles
+Actualización porcentual \(0 a 100%\
+baterías.
+Técnico
+MEDIA
+RF-09
+Motor de Alertas Preventivas
+Evaluación en tiempo real de fechas límite e insumos para
+desplegar alertas en el semáforo.
+Técnico / Admin
+ALTA
+RF-10
+Búsqueda y Filtrado
+Filtrado multidimensional de listas de equipos y tickets por estado,
+categoría y ubicación.
+Técnico / Admin
+MEDIA
+RF-11
+Gestión de Catálogos
+Administración de usuarios, roles, sedes/ubicaciones y familias de
+categorías.
+Administrador
+MEDIA
+RF-12
+Registro de Auditoría
+Persistencia automática de bitácora inalterable con autor,
+fecha/hora y acción ejecutada.
+Sistema
+MEDIA
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 6 de 9
+10.3 Catálogo de Requisitos No Funcionales \(RNF-01 a RNF-07\
+ID
+Requisito No Funcional
+Descripción y Criterio de Verificación Técnica
+Ámbito
+Prioridad
+RNF-01
+Arquitectura y Stack
+Patrón monolítico MVC en Laravel 12.x / PHP 8.2+ con vistas Blade y
+MariaDB 10.11+.
+Sistema / Backend
+ALTA
+RNF-02
+Seguridad Aplicativa
+Cifrado Bcrypt/Argon2id, protección CSRF nativa, mitigación XSS y
+HTTPS obligatorio.
+Seguridad Web
+ALTA
+RNF-03
+Integridad de Datos
+Claves foráneas con integridad referencial, unicidad en números de
+serie y códigos.
+Base de Datos
+ALTA
+RNF-04
+Rendimiento
+Tiempos de respuesta < 2s en búsquedas y renderizado de alertas
+con índices B-Tree.
+Performance
+MEDIA
+RNF-05
+Usabilidad Responsive
+Interfaz optimizada para navegadores de escritorio en salón y cajas
+con Bootstrap.
+Frontend / UI
+MEDIA
+RNF-06
+Segmentación de Red
+Aislamiento estricto en 2 VLANs con firewall pfSense, bloqueo de
+SSH/MySQL y VPN.
+Infraestructura
+ALTA
+RNF-07
+Disponibilidad / DRP
+Ubuntu Server LTS con backups automáticos en cron diario y firewall
+de host UFW.
+POSIX / Continuidad
+ALTA
+10.4 Reglas del Motor de Alertas Preventivas \(Lógica de Negocio\
+ESTADO NORMAL \(VERDE\
+Mantenimiento al día \(próxima fecha mayor a 7
+días\
+20%. El activo opera en condiciones óptimas.
+ALERTA ATENCIÓN \(AMARILLO\
+Próxima fecha de service en 7 días o menos O
+nivel de consumible menor o igual al 20%.
+Requiere inspección o recarga programada.
+ALERTA CRÍTICA \(ROJO\
+Mantenimiento vencido \(fecha menor a hoy\
+equipo en estado 'Fuera de Servicio' O dado de
+baja lógica \(activo = false\
+10.5 Casos de Prueba Formales del Sistema \(Plan de Calidad\
+Caso
+Nombre de la Prueba
+Condición de Entrada
+Resultado Esperado de la Verificación
+Área
+CP-01
+Control de Acceso \(RBAC\
+Usuario con rol empleado intenta ingresar a
+/admin/activos/crear
+.
+Middleware CheckRole rechaza la petición
+HTTP con código 
+403 Prohibido
+.
+Laravel
+CP-02
+Bajas Lógicas \(Integridad\
+Técnico da de baja un POS averiado desde el
+módulo de inventario.
+El activo cambia a activo = false
+; los tickets y
+servicios históricos persisten intactos.
+Base Datos
+CP-03
+Alerta de Consumibles
+Tótem 1 registra un nivel de papel térmico al
+15% \(menor al umbral del 20%\
+El Tablero dispara de inmediato una alerta
+visual amarilla en estado 
+Atención
+.
+Lógica
+CP-04
+Bloqueo Perimetral de Red
+Un host ubicado en VLAN 10 intenta
+conectarse al puerto 22 \(SSH\
+Ubuntu.
+Firewall pfSense bloquea y descarta los
+paquetes TCP; evento registrado en el log del
+sistema.
+Firewall
+CP-05
+Respaldo Automatizado
+Ejecución programada del script
+respaldo_preventiti.sh vía cron.
+Generación exitosa de archivo comprimido
+.tar.gz íntegro en /var/backups/
+.
+POSIX
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 7 de 9
+11. Plan Maestro de Tareas y Cronograma Temporal \(Meses y Semanas\
+El proyecto se desglosa operativamente en 
+19 Pasos Técnicos de Ejecución
+ distribuidos a lo largo de 
+12 Semanas
+ de labor continua,
+agrupadas coherentemente en 
+3 Meses Calendario
+ que se corresponden de manera exacta con los tres Hitos Académicos de evaluación
+formal:
+MES 1 \(Semanas 1 a 4\
+Hito 1: Base y Viabilidad
+ Formalización documental y ESRE.
+ MER de 8 tablas relacionales en MariaDB.
+ Diseño de topología de 2 VLANs y VPN.
+ Laravel base y esqueleto navegable.
+ VMs Ubuntu y Windows aprovisionadas.
+Entrega: Hito 1 Aprobado \(Semana 4\
+MES 2 \(Semanas 5 a 8 / Sem 9\
+Hito 2: Avance Funcional
+ Seeders de 78 activos y 38 usuarios.
+ CRUD completo de activos con bajas lógicas.
+ Flujo operativo de tickets y pruebas unitarias.
+ Reglas de firewall en pfSense y Nmap.
+ Módulo de mantenimientos y consumibles.
+ Tablero de alertas y diagramas UML.
+Entrega: Hito 2 Aprobado \(Semana 9\
+MES 3 \(Semanas 10 a 12\
+Hito 3: Optimización y Cierre
+ Índices B-Tree y Trigger de auditoría en BD.
+ Prueba de desastre y restauración \(DRP\
+ Hardening de servidores \(Linux/Windows\
+ Pruebas integrales de software superadas.
+ Manuales de Usuario y Técnico finalizados.
+ Ensayo general de casos CP-01 a CP-05.
+Entrega: Defensa Final Aprobada \(Semana
+12\
+Detalle de los 19 Pasos Técnicos por Mes, Semana y Responsable:
+Mes / Sem.
+Paso Operativo
+Actividad Técnica Detallada
+Resp.
+Hito
+MES 1
+Sem. 1 - 2
+Paso 1.1
+Doc. Base & ESRE
+Redacción formal del alcance, justificación, análisis de factibilidad cuádruple,
+riesgos iniciales y catálogo ESRE con 78 activos y 38 usuarios.
+Daniel /
+Nacho
+H1
+MES 1
+Sem. 1 - 2
+Paso 1.2
+Diseño MER y DDL
+Diseño conceptual y lógico normalizado del MER \(8 entidades\
+script DDL en MariaDB con restricciones referenciales.
+Daniel
+H1
+MES 1
+Sem. 1 - 2
+Paso 1.3
+Diseño Red Segura
+Definición de topología segmentada \(VLAN 10 Clientes .10.0/24 y VLAN 20
+Servidores .20.0/24\
+Nacho
+H1
+MES 1
+Sem. 3 - 4
+Paso 1.4
+Inicialización Web
+Configuración de Laravel con PHP 8.2, vinculación de .env a MariaDB,
+definición de rutas base y navegación fluida de esqueleto.
+Ramiro
+H1
+MES 1
+Sem. 3 - 4
+Paso 1.5
+Aprovisionamiento VMs
+Despliegue de VM Ubuntu Server \(script usuarios_permisos.sh
+\
+Windows Server 2022 con AD DS y 3 OUs. 
+ENTREGA HITO 1
+.
+Nacho /
+Todos
+H1
+MES 2
+Sem. 5 - 6
+Paso 2.1
+Seguimiento y Git
+Ajuste de cronograma, análisis de desvíos, actualización de matriz de riesgos,
+estrategia de branching en Git y métricas de software.
+Daniel
+H2
+MES 2
+Sem. 5 - 6
+Paso 2.2
+Seeders MariaDB
+Desarrollo y ejecución de Seeders para poblar las 8 tablas con los 78 activos y
+38 usuarios reales para pruebas de integración.
+Daniel
+H2
+MES 2
+Sem. 5 - 6
+Paso 2.3
+CRUD de Activos
+Programación del CRUD completo de activos con paginación, filtros por
+categoría/ubicación, Form Requests y soporte de bajas lógicas.
+Ramiro /
+Daniel
+H2
+MES 2
+Sem. 5 - 6
+Paso 2.4
+Flujo de Tickets
+Ciclo completo de reportes técnicos \(Apertura -> Asignación -> Cierre\
+ejecución de pruebas unitarias mínimas.
+Ramiro
+H2
+MES 2
+Sem. 7 - 8
+Paso 2.5
+pfSense, VPN & Nmap
+Regla Pass HTTPS 443 a Ubuntu, Regla Block SSH/MySQL desde VLAN 10,
+túnel VPN WireGuard activo y reporte de escaneo Nmap.
+Nacho
+H2
+MES 2
+Sem. 7 - 8
+Paso 2.6
+Servicios & Scripts
+Pila Nginx/PHP-FPM, UFW en Ubuntu, GPO de contraseñas complejas en
+Windows, y scripts respaldo_preventiti.sh y export_auditoria.ps1
+.
+Nacho
+H2
+MES 2
+Sem. 7 - 8
+Paso 2.7
+Mantenimiento & Insumos
+Lógica de proyección determinista de proxima_fecha y formulario de
+actualización de niveles de insumos críticos.
+Ramiro /
+Daniel
+H2
+MES 2
+Semana 9
+Paso 2.8
+Tablero & UML
+Desarrollo del panel de alertas tempranas \(Atención/Crítica\
+formales \(Casos de Uso, Clases, Secuencia\
+ENTREGA HITO 2
+.
+Todos
+H2
+MES 3
+Sem. 10 - 11
+Paso 3.1
+Índices & Triggers
+Creación de índices B-Tree en tablas de alto tráfico \(reportes, mantenimientos,
+activos\
+Daniel
+H3
+MES 3
+Sem. 10 - 11
+Paso 3.2
+Prueba DRP / Backup
+Simulación de contingencia catastrófica y ejecución en vivo de restauración
+del dump lógico de MariaDB y archivos de storage/
+.
+Nacho /
+Daniel
+H3
+MES 3
+Sem. 10 - 11
+Paso 3.3
+Hardening Web & Test
+Sanitización estricta de inputs, tokens CSRF, mitigación XSS y ejecución
+formal del plan de pruebas integrales de software.
+Ramiro
+H3
+MES 3
+Sem. 10 - 11
+Paso 3.4
+Hardening Servidores
+Checklist de hardening en Linux/Windows, análisis de logs de eventos,
+ejecución de healthcheck.sh y plan de respuesta a incidentes.
+Nacho
+H3
+MES 3
+Semana 12
+Paso 3.5
+Manuales Consolidados
+Redacción del expediente documental definitivo: Manual de Usuario paso a
+paso, Manual Técnico de Infraestructura y lecciones aprendidas.
+Ramiro /
+Todos
+H3
+MES 3
+Semana 12
+Paso 3.6
+Ensayo Final y Defensa
+Ensayo general del flujo end-to-end \(Casos CP-01 a CP-05\
+diapositivas técnicas y presentación oral ante el tribunal. 
+CIERRE HITO 3
+.
+Todos
+H3
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 8 de 9
+12. Síntesis de Congruencia Global y Conclusiones del Proyecto
+La comparativa y consolidación de los documentos de base evidencia una coherencia absoluta entre los objetivos pedagógicos exigidos por
+la cátedra y la implementación técnica ejecutada por el equipo de PreventiTI. Cada requerimiento académico cuenta con un paso operativo
+concreto, un responsable primario asignado y una evidencia técnica directamente auditable:
+Área Temática Curricular
+Requerimiento Académico del Hito
+Pasos de Implementación
+Evidencia Técnica Entregable y Auditable
+Gestión Documental y de
+Proyecto
+Documento base, ESRE, cronograma,
+métricas, diagramas UML y manuales
+técnicos.
+Pasos 1.1, 2.1, 2.8 y 3.5
+Documento maestro, catálogo de 78 activos y 38
+usuarios, diagramas UML y manuales finales de
+usuario/técnico.
+Programación Web MVC
+\(Laravel\
+Estructura MVC, conexión a BD, CRUD
+funcional, validaciones, testing y
+alertas.
+Pasos 1.4, 2.3, 2.4, 2.7 y 3.3
+Controladores desacoplados, Form Requests,
+pruebas unitarias aprobadas y flujo completo de
+tickets integrado.
+Bases de Datos Relacionales
+MER normalizado, esquema físico,
+seeders de volumen real, índices y
+DRP.
+Pasos 1.2, 2.2, 3.1 y 3.2
+Esquema DDL de 8 tablas, seeders poblados,
+índices B-Tree, Trigger de auditoría y script de
+recuperación probado.
+Redes y Ciberseguridad
+Topología segmentada en VLANs,
+firewall con reglas estrictas, VPN y
+escaneo perimetral.
+Pasos 1.3, 2.5 y 3.4
+VLAN 10 y 20 en pfSense, reglas Pass HTTPS y
+Block SSH/MySQL, túnel WireGuard y reporte de
+escaneo Nmap.
+Sistemas Operativos POSIX
+Ubuntu Server LTS, usuarios/permisos,
+Nginx/PHP, cron de respaldo y
+healthcheck.
+Pasos 1.5, 2.6, 3.2 y 3.4
+Grupo app_preventiti \(775/664\
+\(22/443\
+healthcheck.sh
+.
+Sistemas Operativos
+Microsoft
+Windows Server 2022, Active Directory
+DS, 3 OUs, directivas GPO y scripts.
+Pasos 1.5, 2.6 y 3.4
+Dominio AD DS estructurado, GPO de
+complejidad y bloqueo tras 3 intentos, y script
+PowerShell export_auditoria.ps1
+.
+Oportunidades de Trabajo en Paralelo durante la Ejecución:
+ Mientras 
+Daniel
+ estructura el modelado relacional, las migraciones y seeders de los 78 activos y 38 usuarios, 
+Nacho
+ aprovisiona la
+infraestructura virtual \(pfSense, VLANs, VM Ubuntu y VM Windows Server\
+ Mientras 
+Ramiro
+ implementa la arquitectura web, controladores y servicios en Laravel, 
+Nacho
+ avanza en la configuración de directivas
+GPO en Windows Server y scripts Bash de respaldo automatizado en Linux.
+ En la etapa de cierre, 
+Daniel
+ y 
+Nacho
+ ejecutan las simulaciones de contingencia y recuperación \(DRP\
+Ramiro
+ consolida las
+pruebas de integración del software y los manuales funcionales.
+Conclusión y Dictamen de Viabilidad:
+El sistema 
+PreventiTI
+ constituye una propuesta de ingeniería de software e infraestructura perfectamente equilibrada, que resuelve una necesidad
+crítica del mundo real \(la prevención proactiva de fallas y la trazabilidad de insumos en empresas comerciales\
+monolítica moderna en Laravel y MariaDB, prescindiendo de dependencias complejas o telemetría invasiva. Su plan de trabajo de 12 semanas \(3
+meses\
+100% de los criterios de aprobación académica de cada área disciplinar.
+PreventiTI  Documento Integral de Arquitectura, Requerimientos y Cumplimiento de Hitos
+PROYECTO INTEGRADOR FINAL
+PreventiTI: Gestión Preventiva de Activos Tecnológicos | Stack: Laravel 12 + MariaDB + Ubuntu Server
+Página 9 de 9

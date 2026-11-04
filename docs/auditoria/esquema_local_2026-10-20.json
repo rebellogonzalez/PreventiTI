@@ -1,0 +1,2276 @@
+{
+  "audit_date": "2026-10-20",
+  "timezone": "America/Montevideo",
+  "source": "database/database.sqlite",
+  "access": "read-only",
+  "scope": "Schema, constraints, row counts and applied migration names; no application records or credentials.",
+  "tables": {
+    "activo_alerta": {
+      "row_count": 7,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "activo_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "alerta_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "alertas",
+          "from": "alerta_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "activos",
+          "from": "activo_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_activo_alerta_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "activo_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 1,
+              "name": "alerta_id"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"activo_alerta\" (\"activo_id\" integer not null, \"alerta_id\" integer not null, foreign key(\"activo_id\") references \"activos\"(\"id\") on delete cascade, foreign key(\"alerta_id\") references \"alertas\"(\"id\") on delete cascade, primary key (\"activo_id\", \"alerta_id\"))"
+    },
+    "activo_ubicaciones": {
+      "row_count": 69,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "activo_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "piso",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "sala",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "activos",
+          "from": "activo_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"activo_ubicaciones\" (\"activo_id\" integer not null, \"piso\" varchar, \"sala\" varchar, foreign key(\"activo_id\") references \"activos\"(\"id\") on delete cascade, primary key (\"activo_id\"))"
+    },
+    "activos": {
+      "row_count": 69,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "categoria_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "serial",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "descripcion",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "estado_activo",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "fecha_alta",
+          "type": "date",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "frecuencia_service",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "ubicacion",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "categorias_activo",
+          "from": "categoria_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "activos_serial_unique",
+          "unique": 1,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 2,
+              "name": "serial"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "idx_activos_categoria_estado",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "categoria_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 4,
+              "name": "estado_activo"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"activos\" (\"id\" integer primary key autoincrement not null, \"categoria_id\" integer not null, \"serial\" varchar not null, \"descripcion\" text not null, \"estado_activo\" varchar not null, \"fecha_alta\" date not null, \"frecuencia_service\" integer not null, \"created_at\" datetime, \"updated_at\" datetime, \"ubicacion\" varchar, foreign key(\"categoria_id\") references \"categorias_activo\"(\"id\") on delete restrict)"
+    },
+    "alertas": {
+      "row_count": 10,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "nivel_alerta",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "tipo_alerta",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "fecha_generacion",
+          "type": "datetime",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "estado_alerta",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'Pendiente'",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "urgencia",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'Medio'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"alertas\" (\"id\" integer primary key autoincrement not null, \"nivel_alerta\" varchar not null, \"tipo_alerta\" varchar not null, \"fecha_generacion\" datetime not null, \"estado_alerta\" varchar not null default 'Pendiente', \"urgencia\" varchar check (\"urgencia\" in ('Critico', 'Alto', 'Medio', 'Bajo')) not null default 'Medio', \"created_at\" datetime, \"updated_at\" datetime)"
+    },
+    "asset_map_positions": {
+      "row_count": 0,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "activo_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "floor",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "room",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "x",
+          "type": "double",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "z",
+          "type": "double",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "elevation",
+          "type": "double",
+          "notnull": 1,
+          "dflt_value": "'0'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "rotation",
+          "type": "double",
+          "notnull": 1,
+          "dflt_value": "'0'",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "updated_by",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "usuarios",
+          "from": "updated_by",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "SET NULL",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "activos",
+          "from": "activo_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"asset_map_positions\" (\"activo_id\" integer not null, \"floor\" varchar not null, \"room\" varchar not null, \"x\" double not null, \"z\" double not null, \"elevation\" double not null default '0', \"rotation\" double not null default '0', \"updated_by\" integer, \"created_at\" datetime, \"updated_at\" datetime, foreign key(\"activo_id\") references \"activos\"(\"id\") on delete cascade, foreign key(\"updated_by\") references \"usuarios\"(\"id\") on delete set null, primary key (\"activo_id\"))"
+    },
+    "auditorias": {
+      "row_count": 74,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "fecha_auditoria",
+          "type": "datetime",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "descripcion",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"auditorias\" (\"id\" integer primary key autoincrement not null, \"fecha_auditoria\" datetime not null, \"descripcion\" text not null)"
+    },
+    "cache": {
+      "row_count": 0,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "key",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "value",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "expiration",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "cache_expiration_index",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 2,
+              "name": "expiration"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_cache_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "key"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"cache\" (\"key\" varchar not null, \"value\" text not null, \"expiration\" integer not null, primary key (\"key\"))"
+    },
+    "cache_locks": {
+      "row_count": 0,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "key",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "owner",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "expiration",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "cache_locks_expiration_index",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 2,
+              "name": "expiration"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_cache_locks_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "key"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"cache_locks\" (\"key\" varchar not null, \"owner\" varchar not null, \"expiration\" integer not null, primary key (\"key\"))"
+    },
+    "categorias_activo": {
+      "row_count": 7,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "nombre",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "descripcion",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "requiere_consumible",
+          "type": "tinyint(1)",
+          "notnull": 1,
+          "dflt_value": "'0'",
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "categorias_activo_nombre_unique",
+          "unique": 1,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "nombre"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"categorias_activo\" (\"id\" integer primary key autoincrement not null, \"nombre\" varchar not null, \"descripcion\" text, \"requiere_consumible\" tinyint(1) not null default '0', \"created_at\" datetime, \"updated_at\" datetime)"
+    },
+    "consumibles": {
+      "row_count": 16,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "activo_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "nombre",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "tipo",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "nivel",
+          "type": "numeric",
+          "notnull": 1,
+          "dflt_value": "'100'",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "activos",
+          "from": "activo_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_consumibles_activo_nivel",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "activo_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 4,
+              "name": "nivel"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"consumibles\" (\"id\" integer primary key autoincrement not null, \"activo_id\" integer not null, \"nombre\" varchar not null, \"tipo\" varchar not null, \"nivel\" numeric not null default '100', \"created_at\" datetime, \"updated_at\" datetime, foreign key(\"activo_id\") references \"activos\"(\"id\") on delete cascade)"
+    },
+    "failed_jobs": {
+      "row_count": 0,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "uuid",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "connection",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "queue",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "payload",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "exception",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "failed_at",
+          "type": "datetime",
+          "notnull": 1,
+          "dflt_value": "CURRENT_TIMESTAMP",
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "failed_jobs_uuid_unique",
+          "unique": 1,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "uuid"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "failed_jobs_connection_queue_failed_at_index",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 2,
+              "name": "connection"
+            },
+            {
+              "seqno": 1,
+              "cid": 3,
+              "name": "queue"
+            },
+            {
+              "seqno": 2,
+              "cid": 6,
+              "name": "failed_at"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"failed_jobs\" (\"id\" integer primary key autoincrement not null, \"uuid\" varchar not null, \"connection\" varchar not null, \"queue\" varchar not null, \"payload\" text not null, \"exception\" text not null, \"failed_at\" datetime not null default CURRENT_TIMESTAMP)"
+    },
+    "jefe_nombres": {
+      "row_count": 1,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "jefe_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "nombre",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "apellido",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "jefes_tecnicos",
+          "from": "jefe_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"jefe_nombres\" (\"jefe_id\" integer not null, \"nombre\" varchar not null, \"apellido\" varchar, foreign key(\"jefe_id\") references \"jefes_tecnicos\"(\"id\") on delete cascade, primary key (\"jefe_id\"))"
+    },
+    "jefes_tecnicos": {
+      "row_count": 1,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "nombre_completo",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"jefes_tecnicos\" (\"id\" integer not null, \"nombre_completo\" varchar not null, primary key (\"id\"))"
+    },
+    "job_batches": {
+      "row_count": 0,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "name",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "total_jobs",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "pending_jobs",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "failed_jobs",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "failed_job_ids",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "options",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "cancelled_at",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "created_at",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "finished_at",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_job_batches_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "id"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"job_batches\" (\"id\" varchar not null, \"name\" varchar not null, \"total_jobs\" integer not null, \"pending_jobs\" integer not null, \"failed_jobs\" integer not null, \"failed_job_ids\" text not null, \"options\" text, \"cancelled_at\" integer, \"created_at\" integer not null, \"finished_at\" integer, primary key (\"id\"))"
+    },
+    "jobs": {
+      "row_count": 0,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "queue",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "payload",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "attempts",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "reserved_at",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "available_at",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "created_at",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "jobs_queue_index",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "queue"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"jobs\" (\"id\" integer primary key autoincrement not null, \"queue\" varchar not null, \"payload\" text not null, \"attempts\" integer not null, \"reserved_at\" integer, \"available_at\" integer not null, \"created_at\" integer not null)"
+    },
+    "mantenimientos": {
+      "row_count": 2,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "activo_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "reporte_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "fecha_mantenimiento",
+          "type": "date",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "descripcion",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "observaciones",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "reportes",
+          "from": "reporte_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "SET NULL",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "activos",
+          "from": "activo_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_mantenimientos_activo_fecha",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "activo_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 3,
+              "name": "fecha_mantenimiento"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"mantenimientos\" (\"id\" integer primary key autoincrement not null, \"activo_id\" integer not null, \"reporte_id\" integer, \"fecha_mantenimiento\" date not null, \"descripcion\" text not null, \"observaciones\" text, \"created_at\" datetime, \"updated_at\" datetime, foreign key(\"activo_id\") references \"activos\"(\"id\") on delete restrict, foreign key(\"reporte_id\") references \"reportes\"(\"id\") on delete set null)"
+    },
+    "migrations": {
+      "row_count": 20,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "migration",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "batch",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"migrations\" (\"id\" integer primary key autoincrement not null, \"migration\" varchar not null, \"batch\" integer not null)"
+    },
+    "password_reset_tokens": {
+      "row_count": 0,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "email",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "token",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_password_reset_tokens_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "email"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"password_reset_tokens\" (\"email\" varchar not null, \"token\" varchar not null, \"created_at\" datetime, primary key (\"email\"))"
+    },
+    "reporte_activo": {
+      "row_count": 7,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "reporte_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "activo_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "activos",
+          "from": "activo_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "RESTRICT",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "reportes",
+          "from": "reporte_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "uq_reporte_un_activo",
+          "unique": 1,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "reporte_id"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_reporte_activo_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "reporte_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 1,
+              "name": "activo_id"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"reporte_activo\" (\"reporte_id\" integer not null, \"activo_id\" integer not null, foreign key(\"reporte_id\") references \"reportes\"(\"id\") on delete cascade, foreign key(\"activo_id\") references \"activos\"(\"id\") on delete restrict, primary key (\"reporte_id\", \"activo_id\"))"
+    },
+    "reportes": {
+      "row_count": 10,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "jefe_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "auditoria_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "historial",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "estado_reporte",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'Abierto'",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "urgencia",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'Medio'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "descripcion",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "fecha_creacion",
+          "type": "datetime",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "fecha_cierre",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "resolucion",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "informe_accionar",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "diagnostico_final",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "auditorias",
+          "from": "auditoria_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "SET NULL",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "jefes_tecnicos",
+          "from": "jefe_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "SET NULL",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "reportes_auditoria_id_unique",
+          "unique": 1,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 2,
+              "name": "auditoria_id"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "idx_reportes_estado_urgencia",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 4,
+              "name": "estado_reporte"
+            },
+            {
+              "seqno": 1,
+              "cid": 5,
+              "name": "urgencia"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"reportes\" (\"id\" integer primary key autoincrement not null, \"jefe_id\" integer, \"auditoria_id\" integer, \"historial\" text, \"estado_reporte\" varchar not null default 'Abierto', \"urgencia\" varchar check (\"urgencia\" in ('Critico', 'Alto', 'Medio', 'Bajo')) not null default 'Medio', \"descripcion\" text not null, \"fecha_creacion\" datetime not null, \"fecha_cierre\" datetime, \"resolucion\" text, \"created_at\" datetime, \"updated_at\" datetime, \"informe_accionar\" text, \"diagnostico_final\" text, foreign key(\"jefe_id\") references \"jefes_tecnicos\"(\"id\") on delete set null, foreign key(\"auditoria_id\") references \"auditorias\"(\"id\") on delete set null)"
+    },
+    "sessions": {
+      "row_count": 2,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "user_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "ip_address",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "user_agent",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "payload",
+          "type": "TEXT",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "last_activity",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sessions_last_activity_index",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 5,
+              "name": "last_activity"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "sessions_user_id_index",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "user_id"
+            }
+          ]
+        },
+        {
+          "seq": 2,
+          "name": "sqlite_autoindex_sessions_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "id"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"sessions\" (\"id\" varchar not null, \"user_id\" integer, \"ip_address\" varchar, \"user_agent\" text, \"payload\" text not null, \"last_activity\" integer not null, primary key (\"id\"))"
+    },
+    "tareas_calendario": {
+      "row_count": 19,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "fecha",
+          "type": "date",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "hora",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'09:00'",
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "titulo",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "tipo",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'mantenimiento'",
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "category",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'Mantenimiento'",
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "technician_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "technician_name",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "asset_id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "asset_code",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "priority",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": "'Media'",
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "completed",
+          "type": "tinyint(1)",
+          "notnull": 1,
+          "dflt_value": "'0'",
+          "pk": 0
+        },
+        {
+          "cid": 12,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 13,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "activos",
+          "from": "asset_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "SET NULL",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "usuarios",
+          "from": "technician_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "SET NULL",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_calendario_fecha",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "fecha"
+            },
+            {
+              "seqno": 1,
+              "cid": 11,
+              "name": "completed"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"tareas_calendario\" (\"id\" integer primary key autoincrement not null, \"fecha\" date not null, \"hora\" varchar not null default '09:00', \"titulo\" varchar not null, \"tipo\" varchar not null default 'mantenimiento', \"category\" varchar not null default 'Mantenimiento', \"technician_id\" integer, \"technician_name\" varchar, \"asset_id\" integer, \"asset_code\" varchar, \"priority\" varchar not null default 'Media', \"completed\" tinyint(1) not null default '0', \"created_at\" datetime, \"updated_at\" datetime, foreign key(\"technician_id\") references \"usuarios\"(\"id\") on delete set null, foreign key(\"asset_id\") references \"activos\"(\"id\") on delete set null)"
+    },
+    "tecnico_jefe_tecnico": {
+      "row_count": 1,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "tecnico_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "jefe_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        },
+        {
+          "cid": 2,
+          "name": "reporte_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 3
+        },
+        {
+          "cid": 3,
+          "name": "fecha_asignacion",
+          "type": "datetime",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 4
+        },
+        {
+          "cid": 4,
+          "name": "fecha_finalizacion",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "motivo_reasignacion",
+          "type": "TEXT",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "reportes",
+          "from": "reporte_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "jefes_tecnicos",
+          "from": "jefe_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 2,
+          "seq": 0,
+          "table": "tecnicos",
+          "from": "tecnico_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "idx_asignacion_reporte_activa",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 2,
+              "name": "reporte_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 4,
+              "name": "fecha_finalizacion"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "sqlite_autoindex_tecnico_jefe_tecnico_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "tecnico_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 1,
+              "name": "jefe_id"
+            },
+            {
+              "seqno": 2,
+              "cid": 2,
+              "name": "reporte_id"
+            },
+            {
+              "seqno": 3,
+              "cid": 3,
+              "name": "fecha_asignacion"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"tecnico_jefe_tecnico\" (\"tecnico_id\" integer not null, \"jefe_id\" integer not null, \"reporte_id\" integer not null, \"fecha_asignacion\" datetime not null, \"fecha_finalizacion\" datetime, \"motivo_reasignacion\" text, foreign key(\"tecnico_id\") references \"tecnicos\"(\"id\") on delete cascade, foreign key(\"jefe_id\") references \"jefes_tecnicos\"(\"id\") on delete cascade, foreign key(\"reporte_id\") references \"reportes\"(\"id\") on delete cascade, primary key (\"tecnico_id\", \"jefe_id\", \"reporte_id\", \"fecha_asignacion\"))"
+    },
+    "tecnicos": {
+      "row_count": 7,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "tipo_tecnico",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"tecnicos\" (\"id\" integer not null, \"tipo_tecnico\" varchar check (\"tipo_tecnico\" in ('Hardware', 'Software', 'Redes/Infraestructura')) not null, primary key (\"id\"))"
+    },
+    "usuario_direcciones": {
+      "row_count": 40,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "usuario_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "calle",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "numero_calle",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "usuarios",
+          "from": "usuario_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"usuario_direcciones\" (\"usuario_id\" integer not null, \"calle\" varchar, \"numero_calle\" varchar, foreign key(\"usuario_id\") references \"usuarios\"(\"id\") on delete cascade, primary key (\"usuario_id\"))"
+    },
+    "usuario_nombres": {
+      "row_count": 40,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "usuario_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "nombre",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "apellido",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "usuarios",
+          "from": "usuario_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [],
+      "create_sql": "CREATE TABLE \"usuario_nombres\" (\"usuario_id\" integer not null, \"nombre\" varchar not null, \"apellido\" varchar, foreign key(\"usuario_id\") references \"usuarios\"(\"id\") on delete cascade, primary key (\"usuario_id\"))"
+    },
+    "usuario_reporte": {
+      "row_count": 10,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "usuario_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "reporte_id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 2
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "reportes",
+          "from": "reporte_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "usuarios",
+          "from": "usuario_id",
+          "to": "id",
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "sqlite_autoindex_usuario_reporte_1",
+          "unique": 1,
+          "origin": "pk",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 0,
+              "name": "usuario_id"
+            },
+            {
+              "seqno": 1,
+              "cid": 1,
+              "name": "reporte_id"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"usuario_reporte\" (\"usuario_id\" integer not null, \"reporte_id\" integer not null, foreign key(\"usuario_id\") references \"usuarios\"(\"id\") on delete cascade, foreign key(\"reporte_id\") references \"reportes\"(\"id\") on delete cascade, primary key (\"usuario_id\", \"reporte_id\"))"
+    },
+    "usuarios": {
+      "row_count": 40,
+      "columns": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "cedula",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "email",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "rol",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "numero_telefono",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "password",
+          "type": "varchar",
+          "notnull": 1,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "activo",
+          "type": "tinyint(1)",
+          "notnull": 1,
+          "dflt_value": "'1'",
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "remember_token",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "created_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "updated_at",
+          "type": "datetime",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "nombre_completo",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        },
+        {
+          "cid": 11,
+          "name": "direccion",
+          "type": "varchar",
+          "notnull": 0,
+          "dflt_value": null,
+          "pk": 0
+        }
+      ],
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "seq": 0,
+          "name": "usuarios_email_unique",
+          "unique": 1,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 2,
+              "name": "email"
+            }
+          ]
+        },
+        {
+          "seq": 1,
+          "name": "usuarios_cedula_unique",
+          "unique": 1,
+          "origin": "c",
+          "partial": 0,
+          "columns": [
+            {
+              "seqno": 0,
+              "cid": 1,
+              "name": "cedula"
+            }
+          ]
+        }
+      ],
+      "create_sql": "CREATE TABLE \"usuarios\" (\"id\" integer primary key autoincrement not null, \"cedula\" varchar, \"email\" varchar not null, \"rol\" varchar check (\"rol\" in ('Administrador', 'Empleado')) not null, \"numero_telefono\" varchar, \"password\" varchar not null, \"activo\" tinyint(1) not null default '1', \"remember_token\" varchar, \"created_at\" datetime, \"updated_at\" datetime, \"nombre_completo\" varchar, \"direccion\" varchar)"
+    }
+  },
+  "foreign_key_violations": [],
+  "applied_migrations": [
+    "0001_01_01_000001_create_cache_table",
+    "0001_01_01_000002_create_jobs_table",
+    "2026_09_03_000001_create_roles_table",
+    "2026_09_03_000002_create_usuarios_table",
+    "2026_09_03_000003_create_categorias_activo_table",
+    "2026_09_03_000004_create_ubicaciones_table",
+    "2026_09_03_000005_create_activos_table",
+    "2026_09_03_000006_create_reportes_table",
+    "2026_09_03_000007_create_mantenimientos_table",
+    "2026_09_03_000008_create_consumibles_activo_table",
+    "2026_09_03_000009_create_tareas_calendario_table",
+    "2026_09_03_000010_create_auditoria_logs_table",
+    "2026_09_08_202925_add_coordinates_to_activos_table",
+    "2026_09_17_000001_separate_reports_and_notifications",
+    "2026_09_17_000002_normalize_historical_audit_labels",
+    "2026_09_17_000003_remove_obsolete_audit_workflow_labels",
+    "2026_09_22_000001_migrate_preventiti_to_hito1_schema",
+    "2026_09_22_000002_reconcile_official_catalog_and_staff",
+    "2026_09_24_000003_align_mariadb_contract_and_report_workflow",
+    "2026_10_04_000001_create_asset_map_positions"
+  ]
+}

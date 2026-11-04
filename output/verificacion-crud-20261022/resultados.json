@@ -1,0 +1,41 @@
+{
+  "fecha": "2026-10-22",
+  "alcance": "CRUD de activos local en PHP/Laravel y SQLite",
+  "resultado": "aprobado",
+  "php": {
+    "comando": "php artisan test --compact",
+    "pruebas": 66,
+    "aprobadas": 66,
+    "aserciones": 698,
+    "duracion_ms": 6795,
+    "base": "SQLite en memoria"
+  },
+  "javascript": {
+    "comando": "node --test tests/Frontend/*.test.mjs",
+    "pruebas": 24,
+    "aprobadas": 24,
+    "fallidas": 0
+  },
+  "recursos": {
+    "comando": "npm run build",
+    "resultado": "compilación correcta"
+  },
+  "navegador": {
+    "base": "SQLite temporal independiente, datos semilla",
+    "servidor_prueba": "http://127.0.0.1:8017",
+    "activo_prueba": "ACT-0086",
+    "comprobaciones": [
+      "Alta con puntuación y símbolos",
+      "Búsqueda del activo creado",
+      "Carga de ficha desde la API",
+      "Rechazo de serie duplicada conservando el formulario",
+      "Edición de categoría, ubicación, nombre, serie, responsable y frecuencia",
+      "Persistencia tras recargar el navegador",
+      "Baja lógica confirmada",
+      "Recuperación de estado Operativo",
+      "Reapertura del formulario con los valores modificados"
+    ],
+    "captura": "edicion-activo.png"
+  },
+  "limite": "Verificado con SQLite; no acredita ejecución en MariaDB ni presentación académica."
+}

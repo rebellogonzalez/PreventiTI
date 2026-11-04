@@ -1,0 +1,49 @@
+.technician-history { padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: #fff; min-width: 0; }
+.technician-history-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.technician-history-heading h2 { font-size: 1rem; font-weight: 700; color: #0f172a; }
+.technician-history-heading p { margin-top: .25rem; font-size: .8rem; color: #64748b; }
+.technician-history-heading > span { flex-shrink: 0; border-radius: 1rem; padding: .25rem .65rem; background: #f5f3ff; color: #6d28d9; font-size: .7rem; font-weight: 600; }
+.technician-history-note { margin: .8rem 0 1rem; max-width: 75ch; color: #64748b; font-size: .75rem; line-height: 1.6; }
+.technician-history-list { display: grid; gap: .65rem; }
+.technician-history-card { border: 1px solid #e2e8f0; border-radius: .6rem; min-width: 0; overflow: hidden; }
+.technician-history-card > summary { display: flex; align-items: center; gap: 1rem; padding: 1rem; cursor: pointer; list-style: none; }
+.technician-history-card > summary::-webkit-details-marker { display: none; }
+.technician-history-card > summary::after { content: ''; flex-shrink: 0; width: .45rem; height: .45rem; border-right: 2px solid #64748b; border-bottom: 2px solid #64748b; transform: rotate(45deg); margin: 0 .25rem .25rem; }
+.technician-history-card[open] > summary::after { transform: rotate(225deg); margin-top: .35rem; }
+.technician-history-card > summary:hover, .technician-history-card[open] > summary { background: #f8fafc; }
+.technician-history summary:focus-visible, .technician-history-table:focus-visible, .technician-history-link:focus-visible { outline: 2px solid #7c3aed; outline-offset: -2px; }
+.technician-history-person { display: grid; gap: .2rem; flex: 1; min-width: 0; }
+.technician-history-person > strong { color: #0f172a; font-size: .85rem; overflow-wrap: anywhere; }
+.technician-history-person > span { color: #64748b; font-size: .7rem; }
+.technician-history-person > .technician-history-open-label { color: #6d28d9; font-weight: 600; margin-top: .15rem; }
+.technician-history-counts { display: grid; grid-template-columns: repeat(3, minmax(5rem, 1fr)); gap: .75rem; text-align: center; }
+.technician-history-counts > span { display: grid; gap: .1rem; }
+.technician-history-counts strong { color: #334155; font-size: 1.1rem; font-weight: 700; }
+.technician-history-counts span span { color: #64748b; font-size: .65rem; }
+.technician-history-counts .technician-history-solved strong { color: #047857; }
+.technician-history-table { overflow-x: auto; border-top: 1px solid #e2e8f0; }
+.technician-history table { width: 100%; min-width: 790px; text-align: left; font-size: .75rem; border-collapse: collapse; }
+.technician-history th { background: #f8fafc; color: #475569; font-weight: 600; white-space: nowrap; }
+.technician-history td, .technician-history th { padding: .85rem 1rem; vertical-align: top; }
+.technician-history td { color: #334155; line-height: 1.6; border-top: 1px solid #f1f5f9; max-width: 21rem; overflow-wrap: anywhere; }
+.technician-history-description { display: block; margin: .35rem 0; line-height: 1.55; }
+.technician-history-meta { display: block; color: #64748b; font-size: .7rem; margin-top: .35rem; }
+.technician-history-status { display: inline-block; border-radius: .3rem; padding: .2rem .45rem; font-size: .65rem; font-weight: 600; white-space: nowrap; }
+.technician-history-status.is-solved { color: #047857; background: #ecfdf5; }
+.technician-history-status.is-current { color: #0369a1; background: #f0f9ff; }
+.technician-history-status.is-previous { color: #475569; background: #f1f5f9; }
+.technician-history-link { color: #6d28d9; font-size: .7rem; font-weight: 600; text-decoration: underline; text-underline-offset: .2rem; }
+.technician-assignment-periods { margin-top: .4rem; }
+.technician-assignment-periods summary { color: #6d28d9; cursor: pointer; font-size: .7rem; }
+.technician-assignment-periods ol { display: grid; gap: .7rem; margin-top: .5rem; }
+.technician-assignment-periods li { padding-left: .6rem; border-left: 2px solid #ddd6fe; }
+.technician-assignment-periods li > span, .technician-assignment-periods li > strong { display: block; font-size: .7rem; }
+.technician-assignment-periods li > p { font-size: .7rem; color: #64748b; }
+.technician-history-empty { padding: 1.25rem; font-size: .8rem; color: #64748b; border-top: 1px solid #f1f5f9; }
+@media (max-width: 639px) {
+  .technician-history { padding: 1rem; }
+  .technician-history-heading { flex-wrap: wrap; gap: .5rem; }
+  .technician-history-card > summary { display: grid; grid-template-columns: 1fr auto; gap: .75rem; padding: .85rem; }
+  .technician-history-card > summary::after { grid-column: 2; grid-row: 1; }
+  .technician-history-counts { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); gap: .5rem; padding-top: .7rem; border-top: 1px solid #e2e8f0; }
+}
