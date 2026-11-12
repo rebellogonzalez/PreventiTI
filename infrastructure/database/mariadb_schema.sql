@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS activo_alerta;
 DROP TABLE IF EXISTS alertas;
 DROP TABLE IF EXISTS consumibles;
 DROP TABLE IF EXISTS mantenimientos;
+DROP TABLE IF EXISTS tareas_calendario;
 DROP TABLE IF EXISTS reporte_activo;
 DROP TABLE IF EXISTS usuario_reporte;
 DROP TABLE IF EXISTS reportes;
@@ -113,17 +114,20 @@ CREATE TABLE categorias_activo (
 
 CREATE TABLE activos (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    responsable_id BIGINT UNSIGNED NULL,
     categoria_id BIGINT UNSIGNED NOT NULL,
     serial VARCHAR(100) NOT NULL UNIQUE,
     ubicacion VARCHAR(200) NULL,
     descripcion TEXT NOT NULL,
     estado_activo VARCHAR(50) NOT NULL,
     estado_previo_retiro VARCHAR(255) NULL,
+    fecha_baja TIMESTAMP NULL,
     fecha_alta DATE NOT NULL,
     frecuencia_service INT UNSIGNED NOT NULL,
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_activo_categoria FOREIGN KEY (categoria_id) REFERENCES categorias_activo(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_activo_responsable FOREIGN KEY (responsable_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     INDEX idx_activos_categoria_estado (categoria_id, estado_activo)
 ) ENGINE=InnoDB;
 
@@ -152,6 +156,9 @@ CREATE TABLE reportes (
     fecha_cierre DATETIME NULL,
     resolucion TEXT NULL,
     informe_accionar TEXT NULL,
+    clave_envio CHAR(64) NULL UNIQUE,
+    revision_flujo INT UNSIGNED NOT NULL DEFAULT 0,
+    intervenciones JSON NULL,
     diagnostico_final TEXT NULL,
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -200,6 +207,15 @@ CREATE TABLE mantenimientos (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     activo_id BIGINT UNSIGNED NOT NULL,
     reporte_id BIGINT UNSIGNED NULL,
+    task_id BIGINT UNSIGNED NULL UNIQUE,
+    technician_id BIGINT UNSIGNED NULL,
+    technician_name VARCHAR(255) NULL,
+    interval_days INT UNSIGNED NULL,
+    projected_date DATE NULL,
+    requires_review BOOLEAN NOT NULL DEFAULT FALSE,
+    submission_key CHAR(64) NULL UNIQUE,
+    submission_hash CHAR(64) NULL,
+    CONSTRAINT fk_inspeccion_tecnico FOREIGN KEY (technician_id) REFERENCES usuarios(id) ON DELETE RESTRICT,
     fecha_mantenimiento DATE NOT NULL,
     descripcion TEXT NOT NULL,
     observaciones TEXT NULL,
@@ -254,9 +270,17 @@ CREATE TABLE tareas_calendario (
     asset_code VARCHAR(50) NULL,
     priority VARCHAR(20) NOT NULL DEFAULT 'Media',
     completed BOOLEAN NOT NULL DEFAULT FALSE,
+    reporte_id BIGINT UNSIGNED NULL,
+    cancel_reason VARCHAR(255) NULL,
+    revision INT UNSIGNED NOT NULL DEFAULT 0,
+    submission_key CHAR(64) NULL UNIQUE,
+    submission_hash CHAR(64) NULL,
+    CONSTRAINT fk_calendario_reporte FOREIGN KEY (reporte_id) REFERENCES reportes(id) ON DELETE RESTRICT,
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_calendario_usuario FOREIGN KEY (technician_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     CONSTRAINT fk_calendario_activo FOREIGN KEY (asset_id) REFERENCES activos(id) ON DELETE SET NULL,
     INDEX idx_calendario_fecha (fecha, completed)
 ) ENGINE=InnoDB;
+
+ALTER TABLE mantenimientos ADD CONSTRAINT fk_inspeccion_tarea FOREIGN KEY (task_id) REFERENCES tareas_calendario(id) ON DELETE RESTRICT;

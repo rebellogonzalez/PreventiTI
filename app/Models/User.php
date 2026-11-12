@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -19,7 +20,7 @@ class User extends Authenticatable
         'numero_telefono', 'activo',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'technician', 'chief'];
 
     protected function casts(): array
     {
@@ -29,6 +30,12 @@ class User extends Authenticatable
     public function nombres(): HasMany
     {
         return $this->hasMany(UserName::class, 'usuario_id');
+    }
+
+    public static function staffRevision(): string
+    {
+        $counts = static::selectRaw('COUNT(*) AS total, COUNT(CASE WHEN activo = 1 THEN 1 END) AS active_count')->first();
+        return hash('sha256', $counts->total.'/'.$counts->active_count);
     }
 
     public function direcciones(): HasMany
@@ -48,15 +55,25 @@ class User extends Authenticatable
         return $name ? trim("{$name->nombre} {$name->apellido}") : "Usuario {$this->id}";
     }
 
+    public function technician(): HasOne
+    {
+        return $this->hasOne(Technician::class, 'id');
+    }
+
+    public function chief(): HasOne
+    {
+        return $this->hasOne(TechnicalChief::class, 'id');
+    }
+
     public function roleName(): string
     {
         if ($this->rol === 'Administrador') {
             return 'administrador';
         }
-        if (TechnicalChief::whereKey($this->id)->exists()) {
+        if ($this->chief) {
             return 'tecnico_lider';
         }
-        if (Technician::whereKey($this->id)->exists()) {
+        if ($this->technician) {
             return 'tecnico';
         }
 
@@ -100,7 +117,7 @@ class User extends Authenticatable
 
     public function getEspecialidadAttribute(): ?string
     {
-        return Technician::find($this->id)?->tipo_tecnico;
+        return $this->technician?->tipo_tecnico;
     }
 
     public function getRoleTitleAttribute(): string
@@ -118,27 +135,32 @@ class User extends Authenticatable
         return match ($area) {
             'dashboard', 'reportes' => true,
             'activos', 'mapa', 'calendario', 'mantenimientos', 'consumibles' => $this->isTechnician(),
-            'estadisticas', 'infraestructura' => $this->hasHierarchyAtLeast(2),
-            'usuarios' => $this->isAdmin(),
+            'estadisticas', 'infraestructura', 'usuarios' => $this->hasHierarchyAtLeast(2),
             default => false,
         };
     }
 
-    public function sessionProfile(): array
+    public function profileSummary(): array
     {
         $name = $this->nombre;
         return [
-            'user' => [
-                'id' => $this->id, 'name' => $name, 'email' => $this->email,
-                'role' => $this->roleName(), 'role_title' => $this->role_title,
-                'is_leader' => $this->isLeader(), 'specialty' => $this->especialidad,
-                'avatar' => mb_strtoupper(collect(explode(' ', $name))->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('')),
-            ],
+            'id' => $this->id, 'name' => $name, 'email' => $this->email,
+            'role' => $this->roleName(), 'role_title' => $this->role_title,
+            'is_leader' => $this->isLeader(), 'specialty' => $this->especialidad,
+            'avatar' => mb_strtoupper(collect(explode(' ', $name))->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('')),
+        ];
+    }
+
+    public function sessionProfile(): array
+    {
+        return [
+            'user' => $this->profileSummary(),
             'role' => $this->roleName(), 'hierarchy' => $this->getHierarchyLevel(),
             'allowed_areas' => array_values(array_filter(['dashboard', 'activos', 'mapa', 'reportes', 'calendario', 'estadisticas', 'mantenimientos', 'consumibles', 'usuarios', 'infraestructura'], fn ($area) => $this->canAccessArea($area))),
             'permissions' => [
-                'can_manage_assets' => $this->isAdmin(),
-                'can_view_users' => $this->isAdmin(),
+                'can_manage_assets' => $this->can('create', Asset::class),
+                'can_edit_assets' => $this->isAdmin(),
+                'can_view_users' => $this->canAccessArea('usuarios'),
                 'can_manage_reports' => $this->isLeader(),
                 'can_view_notifications' => $this->isLeader(),
                 'can_view_all_stats' => $this->hasHierarchyAtLeast(2),

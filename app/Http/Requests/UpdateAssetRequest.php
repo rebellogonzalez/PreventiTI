@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Location;
 use Illuminate\Validation\Rule;
 
 class UpdateAssetRequest extends StoreAssetRequest
@@ -16,7 +17,8 @@ class UpdateAssetRequest extends StoreAssetRequest
         return array_replace(parent::rules(), [
             'serie' => ['required', 'string', 'max:100', Rule::unique('activos', 'serial')->ignore($this->route('asset'))],
             // null conserva una ubicación histórica que no pertenezca al catálogo.
-            'ubicacion_id' => 'present|nullable|integer|in:1,2,3,4,5,6,7,8',
+            'ubicacion_id' => ['present', 'nullable', 'integer', Rule::in(Location::mapRooms()->keys()->all())],
+            'condicion_operativa' => 'sometimes|required|in:Operativo,En Mantenimiento,Fuera de Servicio,Desconectado',
             'expected_version' => 'required|string|size:64',
         ]);
     }

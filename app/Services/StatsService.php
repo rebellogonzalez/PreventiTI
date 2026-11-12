@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\AssetCategory;
-use App\Models\CalendarTask;
+use App\Models\Maintenance;
 use App\Models\Report;
 use App\Models\TechnicalChief;
 use App\Models\Technician;
@@ -39,7 +39,7 @@ class StatsService
                         'role' => $techUser->roleName(),
                         'specialty' => $technician->tipo_tecnico,
                         'active' => $techUser->activo,
-                        'maintenances' => CalendarTask::where('technician_id', $techUser->id)->where('tipo', 'mantenimiento')->count(),
+                        'maintenances' => Maintenance::where('technician_id', $techUser->id)->where('requires_review', false)->whereDate('fecha_mantenimiento', '<=', now(Report::TIME_ZONE)->toDateString())->count(),
                     ];
                 }
             }

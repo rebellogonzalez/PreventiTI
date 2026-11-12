@@ -4,42 +4,21 @@ namespace App\Services;
 
 use App\Models\Asset;
 use App\Models\Report;
-use Carbon\Carbon;
+use App\Models\User;
 
 class AlertService
 {
     public function calculateAssetAlert(Asset $asset): string
     {
-        if (! $asset->activo || strtolower($asset->estado) === 'fuera de servicio') {
-            return 'critica';
-        }
-
-        if ($asset->next_maintenance) {
-            $days = (int) Carbon::today()->diffInDays($asset->next_maintenance->copy()->startOfDay(), false);
-            if ($days < 0) {
-                return 'critica';
-            }
-            if ($days <= 7) {
-                return 'atencion';
-            }
-        }
-
-        return $asset->consumable && $asset->consumable->nivel_actual <= 20 ? 'atencion' : 'normal';
+        return $asset->status_alert;
     }
 
-    public function getDashboardSummary(?string $specialty = null): array
+    public function getDashboardSummary(User $user): array
     {
-        $query = Asset::with(['categoria', 'ubicacionDetalle', 'consumable']);
-        if ($specialty) {
-            $query->whereHas('categoria', fn ($q) => $q->where('nombre', 'like', "%{$specialty}%"));
-        }
-        $assets = $query->get();
+        $assets = Asset::inInventory()->with(['mantenimientos', 'consumible'])->get();
         $states = $assets->map(fn (Asset $asset) => $this->calculateAssetAlert($asset));
 
-        $reports = Report::query();
-        if ($specialty) {
-            $reports->whereHas('activos.categoria', fn ($q) => $q->where('nombre', 'like', "%{$specialty}%"));
-        }
+        $reports = Report::visibleTo($user);
 
         return [
             'total_activos' => $assets->count(),

@@ -87,3 +87,11 @@
   .fp-room-list{grid-template-columns:minmax(0,1fr)}
   .fp-header h1{font-size:24px}
 }
+
+.fp-header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.fp-retire { display: block; width: 100%; margin-top: 8px; padding: 10px; border: 1px solid #e8cbd0; border-radius: 7px; color: #98364a; background: white; }
+.fp-retire:hover { background: #fff5f6; }
+@media (max-width: 480px) {
+  .fp-header-actions { margin-top: 12px; }
+  .fp-header-actions .fp-sync { margin-top: 0; }
+}

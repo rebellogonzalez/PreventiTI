@@ -21,7 +21,7 @@ Cuando tengas levantado el servidor MariaDB (sea en la VM de Ubuntu `192.168.20.
 ### Paso 1: Crear la Base de Datos y Usuario en MariaDB
 ```sql
 CREATE DATABASE preventiti CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'preventiti_user'@'%' IDENTIFIED BY 'preventiti_secure_2026';
+CREATE USER 'preventiti_user'@'%' IDENTIFIED BY '<reemplazar por una contraseña fuerte y exclusiva>';
 GRANT ALL PRIVILEGES ON preventiti.* TO 'preventiti_user'@'%';
 FLUSH PRIVILEGES;
 ```
@@ -35,7 +35,7 @@ DB_HOST=192.168.20.10   # o 127.0.0.1 si es local
 DB_PORT=3306
 DB_DATABASE=preventiti
 DB_USERNAME=preventiti_user
-DB_PASSWORD=preventiti_secure_2026
+DB_PASSWORD=<configurar fuera del repositorio>
 ```
 
 ### Paso 3: Ejecutar las Migraciones y Seeders Oficiales

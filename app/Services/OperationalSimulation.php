@@ -32,11 +32,17 @@ class OperationalSimulation
 
     private function generate(CarbonImmutable $day, int $runId): void
     {
-        $chief = User::findOrFail(TechnicalChief::query()->value('id'));
-        $technicians = User::with('nombres')->whereIn('id', Technician::whereNotIn('id', TechnicalChief::select('id'))->pluck('id'))->where('activo', true)->get()->keyBy('id');
-        foreach ([5, 6, 7, 8, 39, 40] as $id) if (! $technicians->has($id)) throw new RuntimeException("Falta el técnico activo {$id}; revisar el catálogo antes de simular.");
+        $chief = User::findOrFail(TechnicalChief::firstActiveId());
+        $scenarioTechnicians = [5, 6, 7, 8, 39, 40];
+        $technicians = User::with('nombres')->whereKey($scenarioTechnicians)->whereIn('id', Technician::select('id'))
+            ->whereNotIn('id', TechnicalChief::select('id'))->where('activo', true)->orderBy('id')->get()->keyBy('id');
+        foreach ($scenarioTechnicians as $id) if (! $technicians->has($id)) throw new RuntimeException("Falta el técnico activo {$id}; revisar el catálogo antes de simular.");
         $creators = User::with('nombres')->where('activo', true)->where('rol', 'Empleado')->whereNotIn('id', Technician::pluck('id'))->orderBy('id')->get();
         if ($creators->isEmpty()) throw new RuntimeException('No hay empleados activos para los casos de prueba.');
+        $employeeAssetIds = Asset::inReportAreasFor($creators->first())->pluck('id')->flip();
+        $reporterFor = fn (Asset $asset, int $index, User $technician) => $employeeAssetIds->has($asset->id)
+            ? $creators[$index % $creators->count()]
+            : $technician;
         $assets = Asset::with('categoria')->orderBy('id')->get()->keyBy('id');
         $marker = "Datos de prueba persistentes. Simulación #{$runId}; referencia {$day->toDateString()}.";
 
@@ -60,7 +66,8 @@ class OperationalSimulation
                 $maintenance = $this->maintenance->registerMaintenance($asset->id, $technicians[$technicianId], $date->toDateString(), $detail);
                 $maintenance->update(['observaciones' => $maintenance->observaciones.' '.$marker]);
                 if ($asset->categoria_id === 7) $this->cost($maintenance, $asset, 'service', 'Servicio preventivo de climatización', 1, 1200, 'Limpieza técnica y revisión del drenaje; incluye mano de obra externa.');
-                $this->task($asset, $technicians[$technicianId], $date, 'mantenimiento', 'Preventivo realizado: '.$asset->codigo, true);
+                $task = $this->task($asset, $technicians[$technicianId], $date, 'mantenimiento', 'Preventivo realizado: '.$asset->codigo, true);
+                $maintenance->update(['task_id' => $task->id]);
             });
         }
 
@@ -72,13 +79,12 @@ class OperationalSimulation
                 ->max(CarbonImmutable::parse($asset->fecha_alta->toDateString(), 'America/Montevideo')->setTime(8 + $index % 4, 10));
             if ($created->greaterThanOrEqualTo($day->startOfDay())) throw new RuntimeException('El catálogo contiene altas demasiado recientes para este historial; no se alteraron los datos.');
             $closed = $created->addHours(5 + $index % 3);
-            $creator = $creators[$index % $creators->count()];
+            $creator = $reporterFor($asset, $index, $technicians[$technicianId]);
             $report = $this->at($created, fn () => $this->reports->createReport($asset->id, $creator, $index % 5 === 0 ? 'Alta' : 'Media', $description));
             $report->update(['historial' => $marker]);
             // Two reassignment cases exercise the history without assigning the chief.
             $firstTechnician = $index === 4 ? 5 : ($index === 20 ? 8 : $technicianId);
             $this->at($created->addMinutes(20), fn () => $this->reports->assignTechnician($report, $chief, $firstTechnician, null));
-            $this->at($created->addMinutes(35), fn () => $this->reports->transition($report, $chief, 'En curso', null, null));
             if ($firstTechnician !== $technicianId) $this->at($created->addHour(), fn () => $this->reports->assignTechnician($report, $chief, $technicianId, 'La inspección inicial requiere intervención de redes; se deriva al especialista disponible.'));
             $this->at($created->addHours(2), fn () => $this->reports->transition($report->fresh(), $chief, 'Diagnóstico', $action, $diagnosis));
             $this->at($closed, function () use ($report, $chief, $action, $diagnosis, $asset, $technicians, $technicianId, $closed, $marker, $part, $price, $quantity) {
@@ -87,11 +93,11 @@ class OperationalSimulation
                 $maintenance->update(['reporte_id' => $report->id, 'observaciones' => $maintenance->observaciones.' '.$marker]);
                 if ($part) $this->cost($maintenance, $asset, str_contains($part, 'Tóner') ? 'supply' : 'part', $part, $quantity, $price, $diagnosis);
                 Alert::where('reporte_id', $report->id)->update(['estado_alerta' => 'Leída']);
-                $this->task($asset, $technicians[$technicianId], $closed, 'reporte', $report->codigo.' · intervención y cierre', true);
+                $this->task($asset, $technicians[$technicianId], $closed, 'reporte', $report->codigo.' · intervención y cierre', true, $report->id);
             });
         }
 
-        // Six active reports and six received reports, including assigned work awaiting start.
+        // A report enters the active queue as soon as a specialist is assigned.
         $openAssets = [12, 43, 77, 50, 31, 39];
         foreach ($technicians->values() as $index => $technician) {
             $asset = $assets[$openAssets[$index]];
@@ -104,20 +110,19 @@ class OperationalSimulation
                 'La notebook demora el inicio de sesión después de una actualización.',
                 'La impresora de etiquetas pierde conexión con el puesto de trabajo.',
             ][$index];
-            $report = $this->at($created, fn () => $this->reports->createReport($asset->id, $creators[$index % $creators->count()], $index === 2 ? 'Critica' : 'Alta', $description));
+            $report = $this->at($created, fn () => $this->reports->createReport($asset->id, $reporterFor($asset, $index, $technician), $index === 2 ? 'Critica' : 'Alta', $description));
             $report->update(['historial' => $marker]);
             $this->at($created->addMinutes(30), fn () => $this->reports->assignTechnician($report, $chief, $technician->id, null));
-            $this->at($created->addHour(), fn () => $this->reports->transition($report, $chief, 'En curso', null, null));
             if (in_array($index, [2, 3], true)) {
                 $diagnosis = $index === 2 ? 'Batería VRLA degradada; requiere sustitución del conjunto compatible y prueba de autonomía.' : 'Junta de estanqueidad deteriorada; requiere recambio y secado de la cúpula.';
                 $action = $index === 2 ? 'Se midió tensión y autonomía. Se aisló la batería defectuosa; pendiente de instalar repuesto.' : 'Se inspeccionó la cúpula y se verificó el ingreso de humedad; pendiente de sustitución de la junta.';
                 $this->at($created->addHours(3), fn () => $this->reports->transition($report->fresh(), $chief, 'Diagnóstico', $action, $diagnosis));
             }
             Alert::where('reporte_id', $report->id)->update(['estado_alerta' => 'Leída']);
-            $this->task($asset, $technician, $day->addDays($index % 3)->setTime(9 + $index, 0), 'reporte', $report->codigo.' · completar intervención');
+            $this->task($asset, $technician, $day->addDays($index % 3)->setTime(9 + $index, 0), 'reporte', $report->codigo.' · completar intervención', false, $report->id);
 
             $asset = $assets[[9, 44, 55, 37, 40, 84][$index]];
-            $received = $this->at($day->subDay()->setTime(10 + $index, 15), fn () => $this->reports->createReport($asset->id, $creators[($index + 6) % $creators->count()], $index % 2 ? 'Media' : 'Baja', [
+            $received = $this->at($day->subDay()->setTime(10 + $index, 15), fn () => $this->reports->createReport($asset->id, $reporterFor($asset, $index + 6, $technician), $index % 2 ? 'Media' : 'Baja', [
                 'El teclado numérico registra pulsaciones duplicadas.', 'La imagen de la cámara se congela durante algunos segundos.',
                 'El equipo de climatización produce vibración al iniciar.', 'La impresora muestra aviso de tóner bajo.',
                 'La pantalla de cartelería no respeta el horario de encendido.', 'La notebook pierde conectividad al mover el conector Ethernet.',
@@ -161,9 +166,9 @@ class OperationalSimulation
         try { return $callback(); } finally { Date::setTestNow($previous); }
     }
 
-    private function task(Asset $asset, User $technician, CarbonImmutable $date, string $type, string $title, bool $completed = false): void
+    private function task(Asset $asset, User $technician, CarbonImmutable $date, string $type, string $title, bool $completed = false, ?int $reportId = null): CalendarTask
     {
-        CalendarTask::create(['fecha' => $date->toDateString(), 'hora' => $date->format('H:i'), 'titulo' => $title,
+        return CalendarTask::create(['reporte_id' => $reportId, 'fecha' => $date->toDateString(), 'hora' => $date->format('H:i'), 'titulo' => $title,
             'tipo' => $type, 'category' => match ($type) { 'reporte' => 'Reporte', 'consumible' => 'Consumible', 'red' => 'Red & Seguridad', 'auditoria' => 'Auditoría', default => 'Mantenimiento' },
             'technician_id' => $technician->id, 'technician_name' => $technician->nombre, 'asset_id' => $asset->id, 'asset_code' => $asset->codigo,
             'priority' => 'Media', 'completed' => $completed]);

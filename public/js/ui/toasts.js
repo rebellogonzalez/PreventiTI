@@ -24,7 +24,7 @@ export function initializeToasts() {
 
     toast.innerHTML = `
       <div class="flex-shrink-0">${iconSvg}</div>
-      <div class="flex-1 text-sm">
+      <div class="min-w-0 flex-1 text-sm">
         <h4 class="font-semibold text-slate-800 leading-tight">${escapeHTML(title)}</h4>
         <p class="text-slate-600 text-xs mt-0.5 leading-normal">${escapeHTML(message)}</p>
       </div>

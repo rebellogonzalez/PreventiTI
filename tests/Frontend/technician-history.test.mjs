@@ -110,3 +110,15 @@ test('history renders safe text, dates, assignment reasons, inactive accounts an
   assert.match(html, /window\.viewReportDetail\(101\)/);
   assert.match(renderTechnicianHistory([], []), /No hay técnicos especialistas registrados/);
 });
+
+
+test('a transfer and a closure in the same second credit the final responsible technician', () => {
+  const instant = '2026-11-10 11:42:05';
+  const report = { ...closed, assigned_technician: null, closed_at: instant, assignment_history: [
+    assignment(5, instant, instant, 'Cambio de turno'),
+    assignment(6, instant, instant),
+  ] };
+  const histories = buildTechnicianHistories(technicians, [report]);
+  assert.equal(histories[0].solvedCount, 0);
+  assert.equal(histories[1].solvedCount, 1);
+});

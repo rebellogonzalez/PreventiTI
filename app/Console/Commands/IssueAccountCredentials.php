@@ -22,27 +22,23 @@ class IssueAccountCredentials extends Command
             $this->error('Use a new file in an existing private directory outside public/.');
             return self::FAILURE;
         }
-        $users = User::with('nombres')->orderBy('id')->get();
-        $credentials = $users->map(fn (User $user) => ['user' => $user, 'password' => AccountPassword::generate($user->email)]);
-        $markdown = "# Credenciales de PreventiTI\n\nEmitidas el 21 de octubre de 2026. Uso privado.\n\n| Nombre | Rol | Correo de acceso | Contraseña |\n| --- | --- | --- | --- |\n";
-        foreach ($credentials as $entry) {
-            $user = $entry['user'];
-            $markdown .= "| {$user->nombre} | {$user->role_title} | {$user->email} | `{$entry['password']}` |\n";
-        }
         $oldMask = umask(0077);
         $file = fopen($path, 'x');
         umask($oldMask);
         if (! $file) return self::FAILURE;
         try {
-            if (fwrite($file, $markdown) !== strlen($markdown)) throw new \RuntimeException('Incomplete credentials file.');
-            fflush($file);
-            DB::transaction(function () use ($credentials) {
-                foreach ($credentials as $entry) {
-                    $user = $entry['user'];
-                    $user->forceFill(['password' => Hash::make($entry['password']), 'remember_token' => null])->save();
+            $count = DB::transaction(function () use ($file) {
+                $users = User::with('nombres')->where('activo', true)->orderBy('id')->lockForUpdate()->get();
+                $markdown = "# Credenciales de PreventiTI\n\nEmitidas el ".now()->format('d/m/Y').". Uso privado.\n\n| Nombre | Rol | Correo de acceso | Contraseña |\n| --- | --- | --- | --- |\n";
+                foreach ($users as $user) {
+                    $password = AccountPassword::generate($user->email);
+                    $markdown .= "| {$user->nombre} | {$user->role_title} | {$user->email} | `{$password}` |\n";
+                    $user->forceFill(['password' => Hash::make($password), 'remember_token' => null])->save();
                 }
+                if (fwrite($file, $markdown) !== strlen($markdown) || ! fflush($file)) throw new \RuntimeException('Incomplete credentials file.');
                 DB::table('sessions')->delete();
-                Audit::create(['fecha_auditoria' => now(), 'descripcion' => 'Emisión de credenciales individuales para '.$credentials->count().' cuentas; sesiones anteriores revocadas.']);
+                Audit::create(['fecha_auditoria' => now(), 'descripcion' => 'Emisión de credenciales individuales para '.$users->count().' cuentas; sesiones anteriores revocadas.']);
+                return $users->count();
             });
         } catch (\Throwable $exception) {
             fclose($file);
@@ -50,7 +46,7 @@ class IssueAccountCredentials extends Command
             throw $exception;
         }
         fclose($file);
-        $this->info($credentials->count().' cuentas actualizadas. Listado privado: '.$path);
+        $this->info($count.' cuentas actualizadas. Listado privado: '.$path);
         return self::SUCCESS;
     }
 }

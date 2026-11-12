@@ -21,7 +21,7 @@ class Asset extends Model
 
     protected function casts(): array
     {
-        return ['fecha_alta' => 'date:Y-m-d', 'frecuencia_service' => 'integer'];
+        return ['fecha_alta' => 'date:Y-m-d', 'fecha_baja' => 'datetime', 'frecuencia_service' => 'integer'];
     }
 
     public function categoria(): BelongsTo
@@ -69,13 +69,36 @@ class Asset extends Model
         return $query->whereNotIn('estado_activo', ['Fuera de Servicio', 'Retirado']);
     }
 
+    public function scopeInInventory(Builder $query): Builder
+    {
+        return $query->whereRaw("LOWER(TRIM(estado_activo)) <> 'retirado'");
+    }
+
+    public function scopeInReportAreasFor(Builder $query, User $user): Builder
+    {
+        if (! $user->isEmployee()) {
+            return $query;
+        }
+
+        $rooms = collect(config('floorplan.rooms'))->whereIn('id', ['ops-a', 'ops-b', 'reception', 'perimeter']);
+        if ($rooms->isEmpty()) {
+            return $query->whereIn('activos.id', []);
+        }
+        $locations = Location::query()->select('activo_id');
+        foreach ($rooms as $room) {
+            $locations->orWhere(fn (Builder $pair) => $pair->where('piso', $room['floor'])->where('sala', $room['location']));
+        }
+
+        return $query->whereIn('activos.id', $locations);
+    }
+
     public function getDaysToMaintenanceAttribute(): ?int
     {
         if (! $this->next_maintenance) {
             return null;
         }
 
-        return (int) Carbon::today()->diffInDays($this->next_maintenance->copy()->startOfDay(), false);
+        return (int) Carbon::parse(now(Report::TIME_ZONE)->toDateString())->diffInDays($this->next_maintenance, false);
     }
 
     public function getStatusAlertAttribute(): string
@@ -89,7 +112,8 @@ class Asset extends Model
             return 'critica';
         }
 
-        if ($this->consumible && $this->consumible->nivel_actual <= 20) {
+        $consumable = $this->relationLoaded('consumable') ? $this->consumable : $this->consumible;
+        if ($consumable && $consumable->nivel_actual <= 20) {
             return 'atencion';
         }
 
@@ -184,7 +208,7 @@ class Asset extends Model
 
     public function getActivoAttribute(): bool
     {
-        return ! in_array(strtolower((string) $this->estado_activo), ['fuera de servicio', 'retirado'], true);
+        return ! in_array(mb_strtolower(trim((string) $this->estado_activo)), ['fuera de servicio', 'retirado'], true);
     }
 
     /** La disponibilidad operativa no determina si hubo una baja patrimonial. */
@@ -200,17 +224,17 @@ class Asset extends Model
 
     public function getLastMaintenanceAttribute(): ?Carbon
     {
+        $today = now(Report::TIME_ZONE)->toDateString();
         $date = $this->relationLoaded('mantenimientos')
-            ? $this->mantenimientos->max('fecha_mantenimiento')
-            : $this->mantenimientos()->max('fecha_mantenimiento');
+            ? $this->mantenimientos->filter(fn ($record) => ! $record->requires_review && $record->fecha_mantenimiento->toDateString() <= $today)->max('fecha_mantenimiento')
+            : $this->mantenimientos()->where('requires_review', false)->whereDate('fecha_mantenimiento', '<=', $today)->max('fecha_mantenimiento');
 
         return $date ? Carbon::parse($date) : null;
     }
 
     public function getNextMaintenanceAttribute(): ?Carbon
     {
-        return $this->last_maintenance && $this->frecuencia_service
-            ? $this->last_maintenance->copy()->addDays($this->frecuencia_service)
-            : null;
+        $baseline = $this->last_maintenance ?? $this->fecha_alta;
+        return $baseline ? Maintenance::projectNextDate($baseline, $this->frecuencia_service) : null;
     }
 }

@@ -71,7 +71,7 @@ class AccountSecurityTest extends TestCase
     {
         $matrix = [
             1 => ['activos' => 200, 'auth/users' => 200, 'estadisticas' => 200, 'infraestructura/status' => 200, 'notificaciones' => 403],
-            4 => ['activos' => 200, 'auth/users' => 403, 'estadisticas' => 200, 'infraestructura/status' => 200, 'notificaciones' => 200],
+            4 => ['activos' => 200, 'auth/users' => 200, 'estadisticas' => 200, 'infraestructura/status' => 200, 'notificaciones' => 200],
             5 => ['activos' => 200, 'auth/users' => 403, 'estadisticas' => 403, 'infraestructura/status' => 403, 'notificaciones' => 403],
             9 => ['activos' => 403, 'auth/users' => 403, 'estadisticas' => 403, 'infraestructura/status' => 403, 'calendario' => 403, 'dashboard/semaforo' => 403, 'dashboard/today-tasks' => 403, 'dashboard/audit-logs' => 403, 'activos/categories' => 403, 'activos/locations' => 403],
         ];
@@ -79,8 +79,9 @@ class AccountSecurityTest extends TestCase
             $this->actingAs(User::findOrFail($id));
             foreach ($endpoints as $endpoint => $status) $this->getJson('/api/'.$endpoint)->assertStatus($status);
         }
+        $this->getJson('/api/activos?incluir_historico=1')->assertForbidden();
         $response = $this->getJson('/api/reportes/activos-disponibles')->assertOk();
-        $this->assertSame(['id', 'code', 'name', 'location_name', 'active'], array_keys($response->json('data.0')));
+        $this->assertSame(['id', 'code', 'name', 'category_name', 'location_name', 'active'], array_keys($response->json('data.0')));
     }
 
     public function test_technician_calendar_is_own_only_and_cannot_schedule_for_others(): void
@@ -94,15 +95,19 @@ class AccountSecurityTest extends TestCase
         $this->patchJson('/api/calendario/'.$own->id.'/toggle')->assertOk();
     }
 
-    public function test_issued_credentials_are_unique_match_every_account_and_revoke_sessions(): void
+    public function test_issued_credentials_are_unique_match_active_accounts_and_revoke_sessions(): void
     {
         $path = sys_get_temp_dir().'/preventiti-credentials-test-'.bin2hex(random_bytes(6)).'.md';
         DB::table('sessions')->insert(['id' => 'obsolete', 'user_id' => 1, 'payload' => '', 'last_activity' => time()]);
         User::query()->update(['remember_token' => 'obsolete']);
+        $inactive = User::findOrFail(9);
+        $inactive->forceFill(['activo' => false, 'remember_token' => null])->save();
         try {
             $this->artisan('accounts:issue-credentials', ['output' => $path])->assertSuccessful();
             preg_match_all('/\| ([^|\s]+@[^|\s]+) \| `([^`]+)` \|/', file_get_contents($path), $matches, PREG_SET_ORDER);
-            $this->assertCount(40, $matches);
+            $this->assertCount(39, $matches);
+            $this->assertStringNotContainsString($inactive->email, file_get_contents($path));
+            $this->assertSame($inactive->password, $inactive->fresh()->password);
             $passwords = [];
             foreach ($matches as $match) {
                 $user = User::where('email', $match[1])->firstOrFail();
@@ -110,7 +115,7 @@ class AccountSecurityTest extends TestCase
                 $this->assertStringStartsWith(ucfirst(explode('.', $match[1])[0]), $match[2]);
                 $passwords[] = $match[2];
             }
-            $this->assertCount(40, array_unique($passwords));
+            $this->assertCount(39, array_unique($passwords));
             $this->assertSame(0, DB::table('sessions')->count());
             $this->assertSame(0, User::whereNotNull('remember_token')->count());
         } finally {

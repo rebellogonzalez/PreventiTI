@@ -9,6 +9,7 @@
       </div>
 
       <form id="form-actualizar-consumible" class="mt-4 space-y-4 text-xs">
+        <label class="block">Tarea de calendario<select id="consumible-task" class="w-full border rounded-lg p-2"></select></label>
         <input type="hidden" id="consumible-asset-id">
 
         <div>

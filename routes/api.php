@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\NetworkSimulationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 // =============================================================================
@@ -27,8 +28,13 @@ Route::middleware('auth.preventiti')->group(function () {
     // 1. Gestión de Sesión y Perfil
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::get('/staff-revision', [AuthController::class, 'staffRevision']);
         Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/users', [AuthController::class, 'users'])->middleware('role:administrador');
+        Route::middleware('role:administrador,tecnico_lider')->prefix('users')->group(function () {
+            Route::get('/', [UserController::class, 'index']);
+            Route::post('/', [UserController::class, 'store']);
+            Route::delete('/{id}', [UserController::class, 'destroy'])->whereNumber('id');
+        });
         Route::get('/task-assignees', [AuthController::class, 'taskAssignees'])->middleware('role:administrador,tecnico_lider');
     });
 
@@ -51,24 +57,24 @@ Route::middleware('auth.preventiti')->group(function () {
         Route::get('/locations', [AssetController::class, 'locations'])->middleware('role:administrador,tecnico_lider,tecnico');
         Route::get('/{id}', [AssetController::class, 'show']);
 
-        // Altas, modificaciones y bajas lógicas: exclusivo Administrador.
-        Route::middleware('role:administrador')->group(function () {
+        Route::middleware('role:administrador,tecnico_lider')->group(function () {
             Route::post('/', [AssetController::class, 'store']);
-            Route::patch('/{asset}', [AssetController::class, 'update'])->whereNumber('asset');
-            Route::patch('/{id}/toggle', [AssetController::class, 'toggleActive']);
+            Route::patch('/{id}/toggle', [AssetController::class, 'changeRetirement']);
+            Route::delete('/{id}', [AssetController::class, 'changeRetirement']);
         });
-        Route::middleware('role:tecnico_lider')->delete('/{id}', [AssetController::class, 'destroy']);
+        Route::patch('/{asset}', [AssetController::class, 'update'])->whereNumber('asset')->middleware('role:administrador');
     });
 
     // 4. Reportes de situación y alertas persistentes del Hito 1
     Route::prefix('reportes')->group(function () {
         Route::get('/', [ReportController::class, 'index']);
+        Route::get('/historial', [ReportController::class, 'history']);
         Route::get('/activos-disponibles', [ReportController::class, 'availableAssets']);
         Route::middleware('role:tecnico_lider')->get('/tecnicos', [ReportController::class, 'technicians']);
         Route::get('/{id}', [ReportController::class, 'show']);
         Route::post('/', [ReportController::class, 'store']);
         Route::middleware('role:tecnico_lider')->patch('/{id}/asignacion', [ReportController::class, 'assign']);
-        Route::middleware('role:tecnico_lider')->patch('/{id}/estado', [ReportController::class, 'transition']);
+        Route::middleware('role:tecnico_lider,tecnico')->patch('/{id}/estado', [ReportController::class, 'transition']);
     });
 
     Route::middleware('role:tecnico_lider')->prefix('notificaciones')->group(function () {
@@ -79,6 +85,7 @@ Route::middleware('auth.preventiti')->group(function () {
     // 5. Mantenimientos Preventivos (RF-07)
     Route::prefix('mantenimientos')->group(function () {
         Route::get('/', [MaintenanceController::class, 'index']);
+        Route::patch('/{id}/fecha', [MaintenanceController::class, 'correctDate'])->whereNumber('id')->middleware('role:administrador,tecnico_lider');
         Route::middleware('role:administrador,tecnico_lider,tecnico')->group(function () {
             Route::post('/', [MaintenanceController::class, 'store']);
         });
@@ -102,6 +109,8 @@ Route::middleware('auth.preventiti')->group(function () {
         Route::get('/', [CalendarController::class, 'index'])->middleware('role:administrador,tecnico_lider,tecnico');
         Route::middleware('role:administrador,tecnico_lider,tecnico')->group(function () {
             Route::post('/', [CalendarController::class, 'store'])->middleware('role:administrador,tecnico_lider');
+            Route::patch('/{id}', [CalendarController::class, 'edit'])->whereNumber('id')->middleware('role:administrador,tecnico_lider');
+            Route::patch('/{id}/asignacion', [CalendarController::class, 'assign'])->whereNumber('id')->middleware('role:administrador,tecnico_lider');
             Route::patch('/{id}/toggle', [CalendarController::class, 'toggleCompleted']);
         });
     });

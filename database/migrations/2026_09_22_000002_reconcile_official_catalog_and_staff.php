@@ -124,7 +124,7 @@ return new class extends Migration
                 $userId = $user?->id ?? DB::table('usuarios')->insertGetId([
                     'email' => $email,
                     'rol' => 'Empleado',
-                    'password' => Hash::make('preventiti2026'),
+                    'password' => Hash::make(\App\Support\AccountPassword::generate($email)),
                     'activo' => true,
                     'created_at' => now(),
                     'updated_at' => now(),

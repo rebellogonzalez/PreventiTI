@@ -14,7 +14,8 @@ class StoreReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'asset_id' => 'required|exists:activos,id',
+            'submission_id' => 'sometimes|uuid',
+            'asset_id' => 'required|integer|min:1',
             'priority' => 'required|in:Baja,Media,Alta,Critica',
             'description' => 'required|string|min:5|max:2000',
         ];
@@ -24,7 +25,8 @@ class StoreReportRequest extends FormRequest
     {
         return [
             'asset_id.required' => 'Debe seleccionar el activo afectado.',
-            'asset_id.exists' => 'El activo seleccionado no existe en el inventario.',
+            'asset_id.integer' => 'Seleccione un dispositivo válido.',
+            'asset_id.min' => 'Seleccione un dispositivo válido.',
             'priority.required' => 'La prioridad es obligatoria.',
             'priority.in' => 'La prioridad debe ser Baja, Media, Alta o Crítica.',
             'description.required' => 'Debe detallar la situación observada.',

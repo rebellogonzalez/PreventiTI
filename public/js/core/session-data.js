@@ -1,11 +1,10 @@
 // Estado de esta sesión: los datos y permisos siempre provienen del servidor.
 class PreventiTIDatabase {
-  static load() {
-    const profile = window.currentUserProfile;
+  static load(profile = window.currentUserProfile) {
     return {
       users: profile ? [profile.user] : [], currentUserId: profile?.user.id,
       currentUserRole: profile?.role, allowedAreas: profile?.allowed_areas || [],
-      assets: [], reportAssets: [], categories: [], locations: [], reports: [],
+      assets: [], archivedAssets: [], reportAssets: [], categories: [], locations: [], reports: [],
       notifications: [], maintenances: [], calendarTasks: [], taskAssignees: [],
       auditLogs: [], componentsReplaced: [], recurringIncidents: [], budgetMetrics: {},
     };

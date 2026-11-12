@@ -27,7 +27,7 @@ $Events = Get-WinEvent -FilterHashtable @{
 } -ErrorAction SilentlyContinue
 
 if ($Events) {
-    $Events | Select-Object TimeCreated, Id, LevelDisplayName, Message |
+    $Events | Select-Object @{Name='TimeCreated'; Expression={$_.TimeCreated.ToString('yyyy-MM-dd HH:mm:ss', [cultureinfo]::InvariantCulture)}}, Id, LevelDisplayName, Message |
         Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
     Write-Host "[✓] Auditoría exportada exitosamente a: $OutputFile" -ForegroundColor Green
 } else {

@@ -35,7 +35,7 @@ La descarga solo ocurre al instalar dependencias de desarrollo. El servidor y lo
 
 ## Alta y edición de activos
 
-El administrador dispone de **Alta de Nuevo Activo** y del botón de lápiz **Editar activo** en cada fila del inventario. La ficha técnica también ofrece **Editar activo**. El formulario compartido carga los datos actuales desde el servidor y permite cambiar categoría, ubicación, nombre/modelo, serie, responsable y frecuencia de mantenimiento. Los errores se muestran dentro del formulario; un conflicto con otra sesión ofrece **Cargar datos actuales**. Una respuesta de guardado correcta actualiza el listado y sincroniza los selectores, el tablero y la auditoría.
+El administrador y el jefe técnico disponen de **Agregar dispositivo** y **Dar de baja** desde el mapa y el inventario. Las bajas se consultan en **Inventario → Histórico de dispositivos**. El administrador también dispone del botón **Editar activo** en cada fila del inventario. La ficha técnica también ofrece **Editar activo**. El formulario compartido carga los datos actuales desde el servidor y permite cambiar categoría, ubicación, nombre/modelo, serie, responsable y frecuencia de mantenimiento. Los errores se muestran dentro del formulario; un conflicto con otra sesión ofrece **Cargar datos actuales**. Una respuesta de guardado correcta actualiza el listado y sincroniza los selectores, el tablero y la auditoría.
 
 La lógica está en `public/js/features/asset-editor.js`; el formulario está en `resources/views/app/modals/asset-create.blade.php`. Consultar [uso, contrato de API y evidencia](CRUD_ACTIVOS.md).
 

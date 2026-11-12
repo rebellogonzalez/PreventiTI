@@ -127,7 +127,7 @@ Usuario–Técnico/Jefe no se dibuja como FK porque no existe. Activo–Reporte 
 
 ### Activos, mantenimiento, consumibles y mapa
 
-- Alta, baja lógica/reactivación y edición de coordenadas: administrador. Baja lógica utiliza `Retirado` y conserva historial. Baja física: solo jefe y únicamente sin reportes ni mantenimientos; el código no exige un retiro previo. No habilitar al administrador esas funciones por jerarquía.
+- El administrador y el jefe técnico pueden dar de alta, retirar y reincorporar dispositivos. La baja pasa el activo al histórico con sus reportes y mantenimientos. La edición de datos y coordenadas corresponde al administrador.
 - Técnicos, jefe y administradores consultan inventario/mantenimientos/consumibles y pueden registrar mantenimiento/actualizar insumos. No inventar restricciones por especialidad: falta un mapeo aprobado especialidad–categoría.
 - Semáforo: crítica si retirado/fuera de servicio o mantenimiento vencido; atención si faltan hasta 7 días o consumible ≤20%; normal en los demás casos. Nivel admitido por API: 0–100.
 - Mapa: 69 activos del backend; 8 áreas simuladas por piso/sala. Posiciones automáticas `schematic` no se guardan; las confirmadas tienen prioridad y caducan al cambiar de sala. API: X/Z entre 0,05 y 0,95; elevación 0–4 m; rotación 0–360°. Dimensiones de salas no son un levantamiento real. Nunca inventar equipos para completar la imagen.

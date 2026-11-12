@@ -1,4 +1,6 @@
 import { escapeHTML as esc } from '../lib/html.js';
+import { CALENDAR_TIME_ZONE } from '../lib/calendar-dates.js';
+import { formatTimestamp } from '../lib/timestamps.js';
 
 export function formatBytes(value) {
   if (!Number.isFinite(Number(value)) || value == null) return 'No disponible';
@@ -7,7 +9,7 @@ export function formatBytes(value) {
   while (amount >= 1024 && index < units.length - 1) { amount /= 1024; index++; }
   return `${amount.toLocaleString('es-UY', { maximumFractionDigits: 1 })} ${units[index]}`;
 }
-const dateLabel = value => value ? new Date(value).toLocaleString('es-UY', { timeZone: 'America/Montevideo' }) : 'Sin fecha';
+const dateLabel = value => formatTimestamp(value, { timeZone: CALENDAR_TIME_ZONE });
 
 export function backupMarkup(backup) {
   if (!backup) return '<p class="text-sm text-slate-500">Todavía no se ha creado un respaldo desde este módulo.</p>';

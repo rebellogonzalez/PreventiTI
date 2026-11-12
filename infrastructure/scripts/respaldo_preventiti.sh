@@ -11,7 +11,7 @@ BACKUP_DIR="/var/backups/preventiti"
 DATE_TAG=$(date +"%Y%m%d_%H%M%S")
 DB_NAME="${DB_DATABASE:-preventiti}"
 DB_USER="${DB_USERNAME:-preventiti_user}"
-DB_PASS="${DB_PASSWORD:-preventiti_secure_2026}"
+DB_PASS="${DB_PASSWORD:?Defina DB_PASSWORD desde una configuración protegida antes del respaldo}"
 APP_PATH="/var/www/preventiti"
 
 mkdir -p "$BACKUP_DIR"

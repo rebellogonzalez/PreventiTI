@@ -8,7 +8,9 @@ Se compararon las filas completas antes y después: las 40 cuentas, hashes de co
 
 Se reemplazaron exclusivamente 10 reportes de demostración, sus 10 alertas, 2 mantenimientos, 16 consumibles y 19 tareas. El usuario confirmó expresamente que los reportes manuales 108–110 eran pruebas. Los otros registros procedían de la semilla histórica y sus migraciones. No se reiniciaron los identificadores.
 
-## Escenario nuevo
+## Escenario generado el 22 de octubre
+
+En ejecuciones posteriores al cambio de asignación automática de estado, los tres reportes recibidos que tienen especialista pasan a En curso al asignarse.
 
 | Datos | Cantidad |
 | --- | ---: |

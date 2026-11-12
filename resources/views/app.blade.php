@@ -59,6 +59,6 @@
   <div id="toast-container"></div>
 
   <!-- Scripts de la Aplicación -->
-  <script type="module" src="{{ asset('js/app.js') }}?v=20261102-busqueda-activos"></script>
+  <script type="module" src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
 </body>
 </html>

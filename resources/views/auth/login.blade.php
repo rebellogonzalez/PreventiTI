@@ -12,7 +12,7 @@
     .font-mono { font-family: 'JetBrains Mono', monospace; }
   </style>
 </head>
-<body class="h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 text-slate-100">
+<body class="min-h-full flex flex-col justify-center py-6 sm:py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 text-slate-100">
 
   <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
     <!-- Logotipo -->

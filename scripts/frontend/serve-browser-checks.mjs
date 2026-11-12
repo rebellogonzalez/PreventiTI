@@ -6,7 +6,9 @@ import { resolve, sep, extname } from 'node:path';
 // Isolated UI checks: serve only the test fixture and public JS/CSS, never .env or the database.
 const root = await realpath(fileURLToPath(new URL('../../', import.meta.url)));
 const allowed = ['public/js/', 'public/css/'];
+const assetTemplates = ['resources/views/app/modals/asset-detail.blade.php', 'resources/views/app/modals/asset-create.blade.php'];
 const fixtures = new Set([
+  ...assetTemplates,
   'tests/Frontend/asset-select.browser.html', 'tests/Frontend/asset-select.browser.mjs',
   'tests/Frontend/maintenance-history.browser.html', 'tests/Frontend/maintenance-history.browser.mjs',
   'tests/Frontend/floorplan.browser.html', 'tests/Frontend/floorplan.browser.mjs',
@@ -23,7 +25,7 @@ createServer(async (request, response) => {
     const file = await realpath(resolve(root, path));
     const permittedFile = fixtures.has(path) ? file === resolve(root, path)
       : allowed.some(prefix => file.startsWith(resolve(root, prefix) + sep));
-    const contentType = types[extname(file)];
+    const contentType = assetTemplates.includes(path) ? 'text/html' : types[extname(file)];
     if (!permittedFile || !contentType) {
       response.writeHead(404).end();
       return;

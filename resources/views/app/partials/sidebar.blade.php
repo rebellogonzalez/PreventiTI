@@ -117,7 +117,7 @@
           <i data-lucide="users" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
           <span data-nav-label>Usuarios y roles</span>
         </div>
-        <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-800 text-slate-400">40</span>
+        <span id="badge-nav-usuarios" aria-label="Cuentas activas" class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-800 text-slate-400"></span>
       </a>
 @endif
         @if(in_array('infraestructura', $sessionProfile['allowed_areas']))

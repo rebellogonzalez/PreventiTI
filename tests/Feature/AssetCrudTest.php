@@ -108,10 +108,23 @@ class AssetCrudTest extends TestCase
         $this->patchJson('/api/activos/1', $payload)->assertOk()
             ->assertJsonPath('data.responsible', $original->responsable)
             ->assertJsonPath('data.periodicity_days', $original->frecuencia_service);
-        $this->patchJson('/api/activos/1', $this->editData(1, ['responsable' => null]))->assertOk()
-            ->assertJsonPath('data.responsible', 'No asignado');
+        $this->patchJson('/api/activos/1', $this->editData(1, ['responsable' => null, 'frecuencia_service' => 0]))->assertOk()
+            ->assertJsonPath('data.responsible', 'No asignado')->assertJsonPath('data.next_maintenance', null);
+        $this->assertSame(0, $original->fresh()->frecuencia_service);
         $this->patchJson('/api/activos/1', $this->editData(1, ['responsable' => '0']))->assertOk()
             ->assertJsonPath('data.responsible', '0');
+    }
+
+    public function test_new_assets_without_a_maintenance_interval_have_no_due_date(): void
+    {
+        $this->actingAs(User::findOrFail(1));
+        $data = ['categoria_id' => 1, 'ubicacion_id' => 1, 'nombre' => 'Terminal sin programación'];
+        foreach ([['serie' => 'SIN-FRECUENCIA'], ['serie' => 'CERO-DIAS', 'frecuencia_service' => 0]] as $fields) {
+            $id = $this->postJson('/api/activos', $data + $fields)->assertCreated()
+                ->assertJsonPath('data.periodicity_days', 0)->assertJsonPath('data.next_maintenance', null)->json('data.id');
+            $this->getJson("/api/activos/{$id}")->assertOk()->assertJsonPath('data.asset.frecuencia_service', 0)
+                ->assertJsonPath('data.days_to_maintenance', null)->assertJsonPath('data.status_alert', 'normal');
+        }
     }
 
     public function test_invalid_edit_is_rejected_atomically_and_unknown_asset_returns_not_found(): void
@@ -119,7 +132,7 @@ class AssetCrudTest extends TestCase
         $this->actingAs(User::findOrFail(1));
         $before = Asset::findOrFail(1)->getAttributes();
         $this->patchJson('/api/activos/1', $this->editData(1, ['categoria_id' => 99999, 'ubicacion_id' => 99,
-            'nombre' => '   ', 'serie' => '', 'responsable' => str_repeat('X', 151), 'frecuencia_service' => 0]))
+            'nombre' => '   ', 'serie' => '', 'responsable' => str_repeat('X', 151), 'frecuencia_service' => -1]))
             ->assertUnprocessable()->assertJsonValidationErrors(['categoria_id', 'ubicacion_id', 'nombre', 'serie', 'responsable', 'frecuencia_service']);
         $this->assertSame($before, Asset::findOrFail(1)->getAttributes());
         $this->patchJson('/api/activos/1', [])->assertUnprocessable()->assertJsonValidationErrors('expected_version');

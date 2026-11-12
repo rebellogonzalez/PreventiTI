@@ -41,15 +41,15 @@ class OperationalSimulationTest extends TestCase
         $this->assertSame(0, Report::whereIn('id', $oldReports)->count());
         $this->assertSame(36, $result['created']['reportes']);
         $this->assertSame(24, Report::where('estado_reporte', 'Finalizado')->count());
-        $this->assertSame(4, Report::where('estado_reporte', 'En curso')->count());
+        $this->assertSame(7, Report::where('estado_reporte', 'En curso')->count());
         $this->assertSame(2, Report::where('estado_reporte', 'Diagnóstico')->count());
-        $this->assertSame(6, Report::where('estado_reporte', 'Recibido/Derivado')->count());
+        $this->assertSame(3, Report::where('estado_reporte', 'Recibido/Derivado')->count());
         $this->assertSame(16, AssetConsumable::count());
         $this->assertSame(3, AssetConsumable::where('nivel', '<=', 20)->count());
         $this->assertSame(0, DB::table('tecnico_jefe_tecnico')->where('tecnico_id', 4)->count());
         $this->assertSame(2, DB::table('tecnico_jefe_tecnico')->whereNotNull('motivo_reasignacion')->count());
         foreach ([5, 6, 7, 8, 39, 40] as $id) {
-            $this->assertSame(4, DB::table('tecnico_jefe_tecnico')->join('reportes', 'reportes.id', '=', 'reporte_id')->where('tecnico_id', $id)->whereNull('fecha_finalizacion')->where('estado_reporte', 'Finalizado')->count());
+            $this->assertSame(4, DB::table('tecnico_jefe_tecnico')->join('reportes', 'reportes.id', '=', 'reporte_id')->where('tecnico_id', $id)->whereColumn('fecha_finalizacion', 'fecha_cierre')->whereNull('motivo_reasignacion')->where('estado_reporte', 'Finalizado')->count());
         }
         foreach (Report::where('estado_reporte', 'Finalizado')->get() as $report) {
             $this->assertNotEmpty($report->informe_accionar);

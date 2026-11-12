@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Alert extends Model
@@ -21,6 +22,11 @@ class Alert extends Model
     protected function casts(): array
     {
         return ['fecha_generacion' => 'datetime'];
+    }
+
+    public function report(): BelongsTo
+    {
+        return $this->belongsTo(Report::class, 'reporte_id');
     }
 
     public function activos(): BelongsToMany

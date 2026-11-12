@@ -29,11 +29,11 @@ class CostStatisticsService
                     'total' => $total, 'reason' => $rows->first()->reason];
             })->sortByDesc('count')->values();
 
-        $reports = Report::with('activos')->whereBetween('fecha_creacion', [$today->startOfYear()->toDateString(), $today->endOfDay()->utc()->toDateTimeString()])->get();
+        $reports = Report::with('activos')->whereBetween('fecha_creacion', [$today->startOfYear()->utc()->toDateTimeString(), $today->endOfDay()->utc()->toDateTimeString()])->get();
         $recurring = $reports->groupBy('descripcion')->filter(fn ($rows) => $rows->count() > 1)
             ->map(function ($rows) {
                 $diagnosed = $rows->whereNotNull('diagnostico_final')->sortByDesc('updated_at')->first();
-                $pending = $rows->where('estado_reporte', '!=', 'Finalizado')->count();
+                $pending = $rows->reject(fn ($report) => $report->isClosed())->count();
                 return ['id' => $rows->first()->id, 'title' => $rows->first()->descripcion,
                     'frequency' => $rows->count().' reportes en el año',
                     'affected_devices' => $rows->flatMap(fn ($report) => $report->activos->map->codigo)->unique()->implode(', '),
@@ -46,8 +46,8 @@ class CostStatisticsService
             $start = $today->startOfMonth()->addMonths($offset);
             $range = [$start->toDateString(), $start->endOfMonth()->toDateString()];
             return ['label' => $start->locale('es')->translatedFormat('M Y'),
-                'completed' => Maintenance::whereBetween('fecha_mantenimiento', $range)->count(),
-                'scheduled' => CalendarTask::where('tipo', 'mantenimiento')->where('completed', false)->whereBetween('fecha', $range)->count()];
+                'completed' => Maintenance::where('requires_review', false)->whereDate('fecha_mantenimiento', '<=', $today->toDateString())->whereBetween('fecha_mantenimiento', $range)->count(),
+                'scheduled' => CalendarTask::whereNull('cancel_reason')->where('tipo', 'mantenimiento')->where('completed', false)->whereBetween('fecha', $range)->count()];
         });
 
         return [

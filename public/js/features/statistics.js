@@ -62,7 +62,7 @@ export function createStatistics({ db }) {
           <div class="flex flex-wrap gap-4 text-xs text-slate-300 mt-3">${(budget.breakdown || []).map(item => `<span>${reportDisplayText(item.item)}: <b>${price(item.amount)}</b></span>`).join('')}</div>
         </div>
 
-        ${renderTechnicianHistory(db.serverStats?.technicians_ranking || [], db.reports || [])}
+        ${window.PreventiTIAPI?.reportHistory ? '<div data-technician-reports role="status">Cargando historial de técnicos…</div>' : renderTechnicianHistory(db.serverStats?.technicians_ranking || [], db.reports || [])}
 
         <!-- Gráficos Principales (Chart.js) -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -93,6 +93,22 @@ export function createStatistics({ db }) {
       </div>
     `;
 
+    const history = container.querySelector?.('[data-technician-reports]');
+    if (history) {
+      async function loadHistory() {
+        try {
+          const response = await window.PreventiTIAPI.request('/reportes');
+          if (history.isConnected) history.outerHTML = renderTechnicianHistory(db.serverStats?.technicians_ranking || [], response.data);
+        } catch (error) {
+          history.textContent = 'No se pudo cargar el historial de técnicos. ';
+          const retry = document.createElement('button');
+          retry.textContent = 'Reintentar';
+          retry.onclick = loadHistory;
+          history.append(retry);
+        }
+      }
+      loadHistory();
+    }
     setTimeout(() => {
       initEstadisticasCharts();
     }, 50);
@@ -105,16 +121,21 @@ export function createStatistics({ db }) {
     const esc = reportDisplayText;
 
     // Calcular incidencias por usuario
-    const userIncidentMap = Object.create(null);
-    (db.reports || []).forEach(t => {
-      userIncidentMap[(t.creator_name || 'Usuario sin identificar')] = (userIncidentMap[(t.creator_name || 'Usuario sin identificar')] || 0) + 1;
-    });
-    const incidentsByUser = Object.entries(userIncidentMap)
-      .map(([name, count]) => {
-        const u = db.users.find(usr => usr.name === name);
-        return { name, count, role: u ? u.role_title : 'Sin rol registrado', sector: u ? u.sector : 'Sin sector registrado' };
-      })
-      .sort((a, b) => b.count - a.count);
+    const usersById = new Map(db.users.map(user => [String(user.id), user]));
+    const userIncidents = new Map();
+    for (const report of db.reports || []) {
+      const key = report.creator_id == null ? `legacy:${report.creator_name || ''}` : String(report.creator_id);
+      if (!userIncidents.has(key)) {
+        const user = usersById.get(key);
+        userIncidents.set(key, {
+          name: user?.name || report.creator_name || 'Usuario sin identificar', email: user?.email,
+          role: user?.role_title || report.creator_role || 'Sin rol registrado', inactive: user?.active === false,
+          sector: user?.sector || 'Sin sector registrado', count: 0,
+        });
+      }
+      userIncidents.get(key).count++;
+    }
+    const incidentsByUser = [...userIncidents.values()].sort((a, b) => b.count - a.count);
 
     // Calcular incidencias por dispositivo
     const assetIncidentMap = Object.create(null);
@@ -125,7 +146,7 @@ export function createStatistics({ db }) {
     });
     const incidentsByAsset = Object.entries(assetIncidentMap)
       .map(([code, count]) => {
-        const a = db.assets.find(ast => ast.code === code);
+        const a = db.assets.find(ast => ast.code === code) || db.archivedAssets?.find(ast => ast.code === code);
         return { code, count, name: a ? a.name : code, location: a ? a.location_name : 'Sin ubicación registrada' };
       })
       .sort((a, b) => b.count - a.count);
@@ -202,15 +223,14 @@ export function createStatistics({ db }) {
             </div>
             <div class="mt-3 divide-y divide-slate-100 max-h-72 overflow-y-auto pr-1">
               ${incidentsByUser.length === 0 ? '<p class="py-6 text-center text-xs text-slate-500">Todavía no hay incidencias reportadas por usuarios.</p>' : incidentsByUser.map((u, idx) => `
-                <div class="py-2.5 flex items-center justify-between gap-3 text-xs">
-                  <div class="flex items-center gap-3">
-                    <span class="w-5 h-5 rounded-full bg-slate-100 font-bold text-slate-600 flex items-center justify-center text-[10px]">
-                      ${idx + 1}
-                    </span>
-                    <div>
-                      <div class="font-semibold text-slate-900">${esc(u.name)}</div>
-                      <div class="text-[11px] text-slate-400">${esc(u.role)} &bull; ${esc(u.sector)}</div>
-                    </div>
+                <div class="incidence-row py-2.5 text-xs">
+                  <span class="w-5 h-5 rounded-full bg-slate-100 font-bold text-slate-600 flex items-center justify-center text-[10px]">
+                    ${idx + 1}
+                  </span>
+                  <div>
+                    <div class="font-semibold text-slate-900">${esc(u.name)}</div>
+                    <div class="text-[11px] text-slate-400">${esc(u.role)} &bull; ${esc(u.sector)}${u.inactive ? ' · Cuenta de baja' : ''}</div>
+                    ${u.email ? `<div class="text-[11px] text-slate-500">${esc(u.email)}</div>` : ''}
                   </div>
                   <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-xs">
                     ${u.count} ${u.count === 1 ? 'reporte' : 'reportes'}
@@ -232,15 +252,13 @@ export function createStatistics({ db }) {
             ${reportsWithoutDevice ? `<p class="mt-3 text-xs text-slate-500">${reportsWithoutDevice} ${reportsWithoutDevice === 1 ? 'reporte sin dispositivo identificado, excluido' : 'reportes sin dispositivo identificado, excluidos'} del ranking.</p>` : ''}
             <div class="mt-3 divide-y divide-slate-100 max-h-72 overflow-y-auto pr-1">
               ${incidentsByAsset.length === 0 ? '<p class="py-6 text-center text-xs text-slate-500">Todavía no hay incidencias asociadas a dispositivos.</p>' : incidentsByAsset.map((a, idx) => `
-                <div class="py-2.5 flex items-center justify-between gap-3 text-xs">
-                  <div class="flex items-center gap-3">
-                    <span class="w-5 h-5 rounded-full bg-slate-100 font-bold text-slate-600 flex items-center justify-center text-[10px]">
-                      ${idx + 1}
-                    </span>
-                    <div>
-                      <div class="font-semibold text-slate-900">${esc(a.name)}</div>
-                      <div class="text-[11px] text-slate-400 font-mono">${esc(a.code)} &bull; ${esc(a.location)}</div>
-                    </div>
+                <div class="incidence-row py-2.5 text-xs">
+                  <span class="w-5 h-5 rounded-full bg-slate-100 font-bold text-slate-600 flex items-center justify-center text-[10px]">
+                    ${idx + 1}
+                  </span>
+                  <div>
+                    <div class="font-semibold text-slate-900">${esc(a.name)}</div>
+                    <div class="text-[11px] text-slate-400 font-mono">${esc(a.code)} &bull; ${esc(a.location)}</div>
                   </div>
                   <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-xs">
                     ${a.count} ${a.count === 1 ? 'reporte' : 'reportes'}

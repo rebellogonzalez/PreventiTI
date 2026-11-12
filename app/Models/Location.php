@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 class Location extends Model
 {
@@ -16,6 +17,11 @@ class Location extends Model
     public $timestamps = false;
 
     protected $fillable = ['activo_id', 'piso', 'sala'];
+
+    public static function mapRooms(): Collection
+    {
+        return collect(config('floorplan.rooms'))->keyBy('location_id');
+    }
 
     public function activo(): BelongsTo
     {

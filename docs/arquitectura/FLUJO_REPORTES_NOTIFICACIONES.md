@@ -8,7 +8,7 @@ No se permiten reportes nuevos sobre activos en estado `Retirado`.
 
 ## Flujo de estados
 
-El estado inicial único es `Recibido/Derivado`. Solo el Jefe Técnico puede asignar técnicos y cambiar el estado:
+El reporte comienza en `Recibido/Derivado`. El Jefe Técnico asigna un especialista e inicia la atención. A partir de `En curso`, tanto jefatura como el especialista asignado pueden registrar el diagnóstico o finalizar el reporte.
 
 ```text
 Recibido/Derivado --(técnico asignado)--> En curso
@@ -16,12 +16,14 @@ En curso ------------------------------> Diagnóstico --(informe)--> Finalizado
 En curso --(informe de accionar)-------------------------------> Finalizado
 ```
 
-- La asignación es manual; no existe asignación automática.
+- Jefatura elige el técnico. Al pulsar **Guardar** en «Recibido/Derivado», la asignación y el paso a «En curso» quedan registrados en la misma operación.
 - Cada reporte tiene un solo técnico activo a la vez.
 - Una reasignación cierra la asignación anterior, guarda fecha y motivo, y abre una nueva.
-- El paso a `En curso` exige un técnico activo.
+- Si un reporte recibido ya tenía un técnico asignado, jefatura puede confirmar al mismo especialista o elegir otro. Una reasignación durante el diagnóstico conserva ese estado.
 - El paso a `Diagnóstico` exige informe de accionar y diagnóstico final del dispositivo.
-- El paso directo de `En curso` a `Finalizado` exige informe de accionar.
+- El paso directo de `En curso` a `Finalizado` exige informe de accionar. Al finalizar desde Diagnóstico se puede mantener el accionar registrado o agregar un informe de cierre. Cada intervención nueva conserva etapa, autor, fecha y texto.
+- El cierre termina la asignación y conserva al último especialista en el historial. Una gestión abierta desde una versión anterior requiere revisar los cambios antes de guardar.
+- Cada envío del formulario tiene un identificador que permite reintentar y recuperar el mismo código de reporte y la misma alerta.
 
 ## Persistencia
 
@@ -35,20 +37,20 @@ La alerta queda disponible únicamente para el Jefe Técnico. Su estado de lectu
 
 ## Acceso
 
-- Cualquier cuenta activa puede crear un reporte sobre un activo operativo.
+- Cualquier cuenta activa puede crear un reporte sobre un activo del inventario en una zona autorizada, incluidos los equipos fuera de servicio.
 - Administración y el Jefe Técnico pueden consultar todos los reportes.
-- Técnicos especialistas y empleados consultan solo los reportes que crearon.
-- La asignación y las transiciones de estado están protegidas para el rol `tecnico_lider`.
+- Los especialistas consultan sus reportes y aquellos en los que participaron. Los empleados consultan los que crearon.
+- Solo jefatura asigna o reasigna técnicos. Al guardar un cambio de estado, el servidor comprueba la cuenta, el estado y la asignación vigente. Un especialista que participó antes de una reasignación puede consultar el historial.
 
 ## Activos retirados
 
-La baja lógica cambia el activo a `Retirado` y conserva los reportes y mantenimientos asociados. La baja física solo puede solicitarla el Jefe Técnico y la API la rechaza si ya existe historial de reporte o mantenimiento, para mantener la trazabilidad.
+La baja lógica cambia el activo a `Retirado` y conserva los reportes y mantenimientos asociados. El administrador y el jefe técnico pueden solicitar la baja desde el inventario o el mapa. La ficha y los reportes autorizados se consultan en **Histórico de dispositivos**.
 
 ## Historial de reportes
 
-En **Reportes → Historial** se consultan todos los reportes disponibles para el perfil autenticado, incluidos los finalizados y los de dispositivos retirados. La vista usa los datos de `/api/reportes` y no hereda los filtros de Kanban o Lista.
+En **Reportes → Historial** se consultan todos los reportes disponibles para el perfil autenticado, incluidos los finalizados y los de dispositivos retirados. La vista consulta páginas de `/api/reportes/historial` y no hereda los filtros de Kanban o Lista.
 
-- Agrupación por fecha de creación, con orden descendente inicial y opción de ver primero los más antiguos.
+- Agrupación por fecha de creación en America/Montevideo, con orden descendente inicial y opción de ver primero los más antiguos.
 - Cada entrada muestra estado actual, descripción del reporte generado, informe de intervención, diagnóstico, código e ID del dispositivo, técnico asignado, autor y fecha de cierre. Los datos ausentes se indican explícitamente.
 - En reportes finalizados sin asignación vigente se muestra el último técnico registrado. Las asignaciones anteriores y sus motivos se pueden desplegar.
 - Búsqueda inmediata por reporte, dispositivo, técnico, descripción, informe y diagnóstico, sin distinguir mayúsculas ni tildes.

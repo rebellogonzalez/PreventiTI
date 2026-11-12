@@ -10,7 +10,8 @@ use App\Models\User;
 use App\Services\AlertService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Models\CalendarTask;
 
 class ConsumableController extends Controller
 {
@@ -26,7 +27,7 @@ class ConsumableController extends Controller
         $user = $this->user($request);
         if (! $user) return response()->json(['success' => false, 'error' => 'No autenticado.'], 401);
         if ($user->isEmployee()) return response()->json(['success' => false, 'error' => 'No autorizado para consultar insumos críticos.'], 403);
-        $assets = Asset::has('consumible')->with(['categoria', 'ubicacionDetalle', 'consumable'])->get();
+        $assets = Asset::inInventory()->has('consumible')->with(['categoria', 'ubicacionDetalle', 'consumable'])->get();
         return response()->json(['success' => true, 'data' => $assets->map(fn (Asset $asset) => ['id' => $asset->id, 'code' => $asset->codigo, 'name' => $asset->nombre, 'category_name' => $asset->categoria?->nombre, 'location_name' => $asset->ubicacionDetalle?->nombre ?? $asset->ubicacion, 'consumable_type' => $asset->consumable?->tipo, 'consumable_level' => $asset->consumable?->nivel_actual, 'consumable_min' => 20.0, 'status_alert' => $this->alertService->calculateAssetAlert($asset)])]);
     }
 
@@ -34,13 +35,23 @@ class ConsumableController extends Controller
     {
         $user = $this->user($request);
         if (! $user) return response()->json(['success' => false, 'error' => 'No autenticado.'], 401);
-        $asset = Asset::with(['categoria', 'consumable'])->findOrFail($id);
-        if (! $asset->consumable) return response()->json(['success' => false, 'error' => 'Este activo no tiene configurado un insumo consumible.'], 422);
-        if ($user->isEmployee() || (! $user->isLeader() && ! $user->isAdmin() && ! $user->canManageAssetSpecialty($asset))) return response()->json(['success' => false, 'error' => 'No autorizado para actualizar este consumible.'], 403);
-        $oldLevel = $asset->consumable->nivel;
-        $asset->consumable->nivel = $request->level;
-        $asset->consumable->save();
-        Audit::create(['fecha_auditoria' => now(), 'descripcion' => "Nivel de consumible de {$asset->codigo} actualizado de {$oldLevel}% a {$request->level}% por {$user->nombre}."]);
-        return response()->json(['success' => true, 'message' => "Nivel de {$asset->consumable->tipo} actualizado al {$request->level}%.", 'data' => ['asset_id' => $asset->id, 'consumable_level' => (float) $request->level, 'status_alert' => $this->alertService->calculateAssetAlert($asset->fresh('consumable'))]]);
+        return DB::transaction(function () use ($user, $request, $id) {
+            $asset = Asset::inInventory()->with('categoria')->lockForUpdate()->findOrFail($id);
+            abort_unless($user->canManageAssetSpecialty($asset), 403);
+            $insumo = $asset->consumible()->lockForUpdate()->first();
+            abort_unless($insumo, 422, 'El activo no tiene un insumo configurado.');
+            if ($request->filled('task_id')) {
+                $task = CalendarTask::lockForUpdate()->findOrFail($request->integer('task_id'));
+                $task->authorizeExecution($user);
+                abort_unless($task->tipo === 'consumible' && (int) $task->asset_id === $id, 422, 'El insumo no corresponde a la tarea.');
+                abort_if($task->completed, 409, 'La reposición ya se registró. Actualice la agenda.');
+                $task->complete($user);
+            }
+            $oldLevel = $insumo->nivel;
+            $insumo->update(['nivel' => $request->level]);
+            Audit::create(['fecha_auditoria' => now(), 'descripcion' => "Nivel de consumible de {$asset->codigo} actualizado de {$oldLevel}% a {$request->level}% por {$user->nombre}."]);
+            return response()->json(['success' => true, 'message' => "Nivel actualizado al {$request->level}%.",
+                'data' => ['asset_id' => $id, 'consumable_level' => (float) $request->level, 'status_alert' => $this->alertService->calculateAssetAlert($asset)]]);
+        }, 3);
     }
 }

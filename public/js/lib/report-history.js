@@ -13,7 +13,8 @@
   function technicianFor(report) {
     if (report.assigned_technician) return report.assigned_technician;
     // Closed historical assignments still identify who handled a finished report.
-    if (report.status !== 'Finalizado') return null;
+    if (report.last_technician) return { ...report.last_technician, historical: true };
+    if (!report.closed && !['Finalizado', 'Resuelto', 'Cerrado', 'Cancelado'].includes(report.status)) return null;
     const last = [...(report.assignment_history || [])].sort((a, b) =>
       String(b.assigned_at || '').localeCompare(String(a.assigned_at || ''))
     )[0];

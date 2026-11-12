@@ -30,7 +30,7 @@ function renderReport(entry) {
         </details>
       </td>
       <td><span class="technician-history-status is-${participation}">${label}</span><span class="technician-history-meta">Estado del reporte: ${escapeHTML(report.status || 'Sin estado registrado')}</span></td>
-      <td>${report.status === 'Finalizado' ? escapeHTML(formatDate(report.closed_at)) : 'Pendiente de cierre'}
+      <td>${report.closed || report.status === 'Finalizado' ? escapeHTML(formatDate(report.closed_at)) : 'Pendiente de cierre'}
         ${participation === 'solved' ? `<span class="technician-history-meta">${escapeHTML(report.action_report || report.final_diagnosis || 'Sin resolución registrada')}</span>` : ''}
       </td>
     </tr>`;
@@ -38,11 +38,12 @@ function renderReport(entry) {
 
 export function renderTechnicianHistory(technicians, reports) {
   const histories = buildTechnicianHistories(technicians, reports);
+  const active = histories.filter(technician => technician.active !== false).length;
   return `
     <section id="estadisticas-tecnicos" class="technician-history" aria-labelledby="technician-history-title">
       <div class="technician-history-heading">
         <div><h2 id="technician-history-title">Reportes por técnico</h2><p>Historial de asignaciones y soluciones de los técnicos especialistas.</p></div>
-        <span>${histories.length} ${histories.length === 1 ? 'especialista' : 'especialistas'}</span>
+        <span>${active} ${active === 1 ? 'especialista en actividad' : 'especialistas en actividad'}${histories.length > active ? ` · ${histories.length - active} de baja` : ''}</span>
       </div>
       <p class="technician-history-note">Cada reporte se cuenta una vez por técnico. Los solucionados se atribuyen al responsable al finalizar; las reasignaciones conservan su historial.</p>
       <div class="technician-history-list">

@@ -72,18 +72,7 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // Spatial layout derived from the supplied reference image. It defines
-        // simulated areas only; it does not infer real-world equipment data.
-        $locations = collect([
-            1 => ['piso' => 'Planta principal', 'sala' => 'Área administrativa abierta — sector A'],
-            2 => ['piso' => 'Planta principal', 'sala' => 'Área administrativa abierta — sector B'],
-            3 => ['piso' => 'Planta principal', 'sala' => 'Atención al cliente'],
-            4 => ['piso' => 'Planta principal', 'sala' => 'Sala de servidores / IT'],
-            5 => ['piso' => 'Planta principal', 'sala' => 'Oficina de gerencia y coordinación'],
-            6 => ['piso' => 'Planta principal', 'sala' => 'Administración y recursos humanos'],
-            7 => ['piso' => 'Planta principal', 'sala' => 'Sala de personal técnico'],
-            8 => ['piso' => 'Exterior', 'sala' => 'Perímetro y accesos'],
-        ]);
+        $locations = Location::mapRooms()->map(fn (array $room) => ['piso' => $room['floor'], 'sala' => $room['location']]);
         $assetLocationOverrides = [
             30 => 5, // notebook del Jefe Técnico
             42 => 3, // cartelería de atención al cliente
@@ -106,6 +95,7 @@ class DatabaseSeeder extends Seeder
         ];
         $officialAssetIds = collect($officialAssets)->pluck('id')->all();
 
+        $usersByName = User::with('nombres')->get()->keyBy(fn (User $user) => $user->nombre);
         foreach ($officialAssets as $entry) {
             $locationId = $assetLocationOverrides[$entry['id']] ?? $entry['location_id'];
             $location = $locations->get($locationId);
@@ -113,6 +103,7 @@ class DatabaseSeeder extends Seeder
             $asset = new Asset(['categoria_id' => $entry['category_id'], 'serial' => $entry['serial'], 'ubicacion' => $locationName, 'descripcion' => "Código legado: {$entry['code']}. Nombre legado: {$entry['name']}. Responsable legado: {$entry['responsible']}.", 'estado_activo' => ! empty($entry['active']) ? $entry['state'] : 'Retirado', 'fecha_alta' => '2026-01-01', 'frecuencia_service' => $entry['periodicity_days']]);
             // IDs are part of the traceability of reports and maintenance records, so retain the supplied IDs.
             $asset->id = $entry['id'];
+            $asset->responsable_id = $usersByName->get($entry['responsible'])?->id;
             $asset->save();
             Location::create(['activo_id' => $asset->id, 'piso' => $location['piso'] ?? null, 'sala' => $location['sala'] ?? null]);
             if (! empty($entry['has_consumable']) && ! empty($entry['consumable_type'])) AssetConsumable::create(['activo_id' => $asset->id, 'nombre' => 'Consumible de '.$asset->codigo, 'tipo' => $entry['consumable_type'], 'nivel' => $entry['consumable_level'] ?? 100]);
@@ -136,7 +127,6 @@ class DatabaseSeeder extends Seeder
             Maintenance::create(['id' => $entry['id'], 'activo_id' => $entry['asset_id'], 'fecha_mantenimiento' => $entry['maintenance_date'], 'descripcion' => $entry['detail'], 'observaciones' => 'Técnico histórico: '.($technician?->nombre ?? 'No identificado').'. Próxima fecha histórica: '.$entry['next_date'].'.']);
         }
 
-        $usersByName = User::with('nombres')->get()->keyBy(fn (User $user) => $user->nombre);
         $assetsByCode = Asset::all()->keyBy(fn (Asset $asset) => $asset->codigo);
         foreach ($data['calendarTasks'] ?? [] as $entry) {
             $technician = $usersByName->get($entry['technician'] ?? '');

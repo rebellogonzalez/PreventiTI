@@ -19,12 +19,12 @@ class FloorplanTest extends TestCase
         $this->seed();
     }
 
-    public function test_map_uses_all_real_assets_and_preserves_inventory_locations(): void
+    public function test_map_uses_current_inventory_and_preserves_locations(): void
     {
         $data = $this->actingAs(\App\Models\User::findOrFail(1))->getJson('/api/floorplan')->assertOk()->json('data');
-        $this->assertCount(69, $data['assets']);
+        $this->assertCount(68, $data['assets']);
         $this->assertCount(8, $data['rooms']);
-        $this->assertEquals(Asset::orderBy('id')->pluck('id')->all(), array_column($data['assets'], 'id'));
+        $this->assertEquals(Asset::inInventory()->orderBy('id')->pluck('id')->all(), array_column($data['assets'], 'id'));
         $leaderNotebook = collect($data['assets'])->firstWhere('id', 30);
         $this->assertSame('management', $leaderNotebook['room_id']);
         $this->assertNull($leaderNotebook['position']);
@@ -37,7 +37,7 @@ class FloorplanTest extends TestCase
         Location::where('activo_id', 2)->delete();
         Asset::findOrFail(2)->update(['ubicacion' => null]);
         $data = $this->actingAs(\App\Models\User::findOrFail(1))->getJson('/api/floorplan')->assertOk()->json('data');
-        $this->assertCount(69, $data['assets']);
+        $this->assertCount(68, $data['assets']);
         $this->assertCount(10, $data['rooms']);
         $this->assertCount(2, array_filter($data['rooms'], fn ($r) => $r['unconfigured'] ?? false));
     }

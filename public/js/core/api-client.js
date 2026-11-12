@@ -3,6 +3,13 @@
 
 (function () {
   const API_BASE = '/api';
+  let staffRevision;
+  let reportRevision;
+  let operationRevision;
+  let reportWrites = 0;
+  let checkingChanges = false;
+  const editing = () => document.querySelector('dialog[open], .modal-backdrop:not(.hidden), #view-container form:focus-within');
+  let pendingSync = Promise.resolve();
 
   class ApiClient {
     static getHeaders() {
@@ -43,27 +50,36 @@
         }
         return data;
       } catch (err) {
-        console.warn(`[API Client Warning] Petición a ${endpoint}:`, err.message);
+        if (err.name !== 'AbortError') console.warn(`[API Client Warning] Petición a ${endpoint}:`, err.message);
         throw err;
       }
     }
 
     // 1. Carga inicial sincronizada con RBAC según permisos reales
-    static async syncWithBackend() {
+    static syncWithBackend(background = false) {
+      const result = pendingSync.then(() => this.loadFromBackend(background));
+      pendingSync = result.catch(() => {});
+      return result;
+    }
+
+    static async loadFromBackend(background) {
+      const writeVersion = reportWrites;
       try {
         const profile = await this.request('/auth/me');
-        window.currentUserProfile = profile;
-        const state = window.PreventiTIDB.load();
+        const state = window.PreventiTIDB.load(profile);
         state.currentUserRole = profile.role;
         state.allowedAreas = profile.allowed_areas;
-        this.applySidebarPermissions(profile.allowed_areas);
+
         const can = area => profile.allowed_areas.includes(area);
         const jobs = [
-          this.request('/reportes').then(r => { state.reports = r.data; }),
+          this.request('/reportes?resumen=1').then(r => { state.reports = r.data; }),
           this.request('/reportes/activos-disponibles').then(r => { state.reportAssets = r.data; }),
         ];
         if (can('activos')) {
-          jobs.push(this.request('/activos').then(r => { state.assets = r.data; }));
+          jobs.push(this.request('/activos?incluir_historico=1').then(r => {
+            state.assets = r.data;
+            state.archivedAssets = r.historico;
+          }));
           jobs.push(this.request('/activos/categories').then(r => { state.categories = r.data.map(c => ({ ...c, name: c.nombre, count: c.activos_count })); }));
           jobs.push(this.request('/activos/locations').then(r => { state.locations = r.data; }));
         }
@@ -82,11 +98,18 @@
           state.recurringIncidents = r.data.recurring_incidents || [];
         }));
         await Promise.all(jobs);
+        if (background && (editing() || writeVersion !== reportWrites)) return;
+        window.currentUserProfile = profile;
+        this.applySidebarPermissions(profile.allowed_areas);
         Object.keys(window.db).forEach(key => delete window.db[key]);
         Object.assign(window.db, state);
+        staffRevision = profile.staff_revision;
+        reportRevision = profile.report_revision;
+        operationRevision = profile.operation_revision;
         window.preventitiDataReady = true;
         window.refreshSessionUI?.();
       } catch (error) {
+        if (background) throw error;
         window.preventitiDataReady = false;
         const content = document.getElementById('view-container');
         if (content) content.textContent = 'No se pudieron cargar los datos autorizados. Recarga la página para reintentar.';
@@ -151,38 +174,52 @@
     }
 
     // 4. Reportes y notificaciones
-    static async createReport(assetId, priority, description) {
+    static async createReport(assetId, priority, description, submissionId) {
       return await this.request('/reportes', {
         method: 'POST',
         body: JSON.stringify({
           asset_id: assetId,
           priority: priority,
           description: description,
+          submission_id: submissionId,
         }),
       });
+    }
+
+    static reportSaved() {
+      reportWrites++;
+      this.checkChanges?.();
+    }
+
+    static reportHistory(filters, page, signal) {
+      const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value));
+      params.set('page', page);
+      return this.request('/reportes/historial?' + params, { signal });
     }
 
     static async reportTechnicians() {
       return await this.request('/reportes/tecnicos');
     }
 
-    static async assignReport(reportId, technicianId, reassignmentReason = null) {
+    static async assignReport(reportId, technicianId, reassignmentReason = null, expectedVersion) {
       return await this.request(`/reportes/${reportId}/asignacion`, {
         method: 'PATCH',
         body: JSON.stringify({
           technician_id: technicianId,
           reassignment_reason: reassignmentReason,
+          expected_version: expectedVersion,
         }),
       });
     }
 
-    static async transitionReport(reportId, status, actionReport = null, finalDiagnosis = null) {
+    static async transitionReport(reportId, status, actionReport = null, finalDiagnosis = null, expectedVersion) {
       return await this.request(`/reportes/${reportId}/estado`, {
         method: 'PATCH',
         body: JSON.stringify({
           status,
           action_report: actionReport,
           final_diagnosis: finalDiagnosis,
+          expected_version: expectedVersion,
         }),
       });
     }
@@ -194,22 +231,22 @@
     }
 
     // 5. Mantenimientos
-    static async registerMaintenance(assetId, date, detail) {
+    static async registerMaintenance(assetId, date, detail, options = {}) {
       return await this.request('/mantenimientos', {
         method: 'POST',
         body: JSON.stringify({
           asset_id: assetId,
           maintenance_date: date,
-          detail: detail,
+          detail, ...options,
         }),
       });
     }
 
     // 6. Consumibles
-    static async updateConsumableLevel(assetId, level) {
+    static async updateConsumableLevel(assetId, level, taskId = null) {
       return await this.request(`/consumibles/${assetId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ level: level }),
+        body: JSON.stringify({ level, task_id: taskId }),
       });
     }
 
@@ -221,9 +258,9 @@
       });
     }
 
-    static async toggleCalendarTask(taskId) {
+    static async toggleCalendarTask(taskId, completed, version) {
       return await this.request(`/calendario/${taskId}/toggle`, {
-        method: 'PATCH',
+        method: 'PATCH', body: JSON.stringify({ completed, expected_version: version }),
       });
     }
 
@@ -245,5 +282,25 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     ApiClient.syncWithBackend().catch(() => {});
+    async function checkChanges() {
+      if (document.hidden || checkingChanges || staffRevision === undefined) return;
+      checkingChanges = true;
+      try {
+        const current = await ApiClient.request('/auth/staff-revision');
+        if ((current.staff_revision !== staffRevision || current.report_revision !== reportRevision || current.operation_revision !== operationRevision) && !editing()) {
+          await ApiClient.syncWithBackend(true);
+        }
+      } catch (error) {
+        if (error.status === 403) window.location.href = '/login';
+      } finally {
+        checkingChanges = false;
+      }
+    }
+    ApiClient.checkChanges = checkChanges;
+    document.addEventListener('close', checkChanges, true);
+    window.addEventListener('focus', checkChanges);
+    window.addEventListener('hashchange', checkChanges);
+    document.addEventListener('visibilitychange', checkChanges);
+    window.setInterval(checkChanges, 30_000);
   });
 })();

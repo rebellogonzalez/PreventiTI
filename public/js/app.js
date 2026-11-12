@@ -35,7 +35,7 @@ function getCurrentUser() {
 
 function addAuditLog(action, entity, detail) {
   const user = getCurrentUser();
-  const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const now = new Date().toISOString();
   db.auditLogs.unshift({
     id: Date.now(),
     timestamp: now,
@@ -108,6 +108,13 @@ function renderCurrentRoute() {
     }
   }
 
+  if (route === 'mapa' && floorplanView?.root.isConnected
+      && floorplanView.canManageAssets === window.currentUserProfile.permissions.can_manage_assets) {
+    const view = floorplanView;
+    // Una lectura iniciada antes del alta o la baja puede contener la lista anterior.
+    Promise.resolve(view.refreshPromise).then(() => view.refresh());
+    return;
+  }
   floorplanGeneration++;
   floorplanView?.dispose();
   floorplanView = null;
@@ -169,6 +176,9 @@ function updateGlobalBadges() {
 
   const inventoryBadge = document.getElementById('badge-nav-inventario');
   if (inventoryBadge) inventoryBadge.textContent = db.assets.length;
+
+  const usersBadge = document.getElementById('badge-nav-usuarios');
+  if (usersBadge && window.preventitiDataReady) usersBadge.textContent = db.users.filter(user => user.active).length;
 
   const reportBadge = document.getElementById('badge-nav-reportes');
   if (reportBadge) {

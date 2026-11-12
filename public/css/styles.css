@@ -153,23 +153,49 @@ body {
   backdrop-filter: blur(4px);
   transition: opacity 0.2s ease-in-out;
 }
+.modal-backdrop > div {
+  min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+.asset-detail-panel { display: flex; flex-direction: column; }
+.asset-detail-fields {
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  gap: .4rem .75rem; align-items: baseline; margin-top: .65rem; font-size: .75rem;
+}
+.asset-detail-fields dt { color: #64748b; }
+.asset-detail-fields dd { text-align: end; font-weight: 600; }
+#detalle-activo-content { scrollbar-gutter: stable; }
+#detalle-activo-content svg { flex-shrink: 0; }
+
+@media (max-width: 639px), (max-height: 480px) {
+  .modal-backdrop { padding: .75rem; }
+  .modal-backdrop > div { padding: 1rem; }
+}
+@media (max-width: 639px) {
+  .modal-backdrop :is(input:not([type="range"]), textarea, select) { min-width: 0; font-size: 1rem; }
+  .modal-backdrop form > .flex.justify-end { flex-wrap: wrap; }
+}
 
 /* Toast Notifications */
 #toast-container {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
   z-index: 99999;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   pointer-events: none;
+  width: min(26.25rem, calc(100% - 2rem));
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 .toast-item {
   pointer-events: auto;
-  min-width: 320px;
-  max-width: 420px;
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
   border-radius: 0.5rem;
@@ -256,7 +282,19 @@ body {
 .calendar-current-date { margin-top: .5rem; color: #0369a1; font-size: .75rem; font-weight: 600; }
 .calendar-metric-period { margin-top: .4rem; color: #64748b; font-size: .75rem; line-height: 1.5; }
 .calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9; }
+.calendar-task-time { display: flex; align-items: stretch; gap: .375rem; }
+.calendar-task-time input { flex: 1; min-width: 0; font-size: 1rem; }
+.calendar-task-time button { padding: .375rem .625rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: #f8fafc; color: #334155; font-weight: 600; white-space: nowrap; }
+.calendar-task-time button:hover { background: #f0f9ff; border-color: #7dd3fc; }
+.calendar-task-time button:focus-visible { outline: 2px solid #0284c7; outline-offset: 2px; }
+@media (max-width: 420px) {
+  .calendar-task-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .calendar-task-time input { grid-column: 1 / -1; }
+  .calendar-task-time button { min-height: 2.25rem; }
+}
 .calendar-navigation { display: flex; align-items: center; gap: .4rem; flex-shrink: 0; }
+.calendar-assign-form { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
+.calendar-assign-form select { max-width: min(55vw, 22rem); min-height: 2rem; padding: .25rem; border: 1px solid #cbd5e1; border-radius: .5rem; }
 .calendar-nav-button, .calendar-today-button { height: 2rem; border: 1px solid #e2e8f0; border-radius: .5rem; background: #fff; color: #475569; cursor: pointer; }
 .calendar-nav-button { width: 2rem; font-size: 1.4rem; line-height: 1; }
 .calendar-today-button { padding: 0 .85rem; font-size: .75rem; font-weight: 600; }
@@ -574,6 +612,38 @@ body {
 .workspace-section-heading p { margin-top: 3px; color: #64748B; font-size: 12px; line-height: 1.6; }
 .workspace-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 24px; }
 .workspace-card-grid > * { min-width: 0; }
+#app-main { overflow-wrap: anywhere; }
+.incidence-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center; column-gap: .65rem;
+}
+@media (max-width: 639px) {
+  .record-table, .record-table tbody { display: block; width: 100%; min-width: 0; }
+  .record-table thead {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+  }
+  .record-table tbody tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem 1rem;
+    padding: 1rem;
+  }
+  .record-table td { min-width: 0; max-width: none; padding: 0; text-align: start; white-space: normal; }
+  .record-table td[data-wide], .record-table td[colspan] { grid-column: 1 / -1; }
+  .record-table td[data-label]::before {
+    content: attr(data-label);
+    content: attr(data-label) / "";
+    display: block; margin-bottom: .2rem;
+    color: #64748b; font: 600 .6875rem/1.4 'Plus Jakarta Sans', sans-serif;
+  }
+  .record-table td.truncate, .record-table td .truncate {
+    max-width: none; white-space: normal; overflow: visible;
+  }
+  .record-table :is(.badge-status, .report-state-badge) { max-width: 100%; white-space: normal; }
+  .record-table [data-wide] > .flex, .record-table .report-list-actions {
+    justify-content: flex-start; flex-wrap: wrap;
+  }
+  .record-table button { min-width: 2.75rem; min-height: 2.75rem; }
+  .record-table button svg { margin-inline: auto; }
+}
 .workspace-section:focus, .section-target:focus, #analisis-patrones:focus { outline: none; }
 .section-target, #analisis-patrones { scroll-margin-top: 20px; }
 
@@ -590,6 +660,9 @@ body {
 .maintenance-history-asset-context { margin-top: 4px; color: #64748B; font-size: 11px; line-height: 1.5; }
 .maintenance-history-observations { margin-top: 5px; color: #64748B; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 .maintenance-history-empty { padding: 28px 16px; color: #64748B; text-align: center; line-height: 1.6; }
+@media (min-width: 640px) {
+  .maintenance-periodicity { white-space: nowrap; }
+}
 @media (max-width: 639px) {
   .maintenance-history-search-controls { flex-wrap: wrap; }
   .maintenance-history-search input { flex-basis: 100%; }
@@ -621,6 +694,34 @@ body {
 .asset-select__option--empty { color: #475569; font-size: 11px; font-weight: 600; }
 .asset-select__no-results { padding: 12px 10px; color: #64748B; font-size: 11px; line-height: 1.5; }
 .report-history-filter-grid .asset-select { grid-column: span 1; }
+.calendar-asset-trigger { display: none; }
+.calendar-asset-dialog[open] {
+  position: fixed; inset: var(--picker-top, 0px) 0 auto; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 14px;
+  width: 100%; max-width: 40rem; height: var(--picker-height, 100dvh); max-height: none;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+  border: 0; background: #fff; color: #0f172a; overflow: hidden;
+}
+.calendar-asset-dialog::backdrop { background: rgb(15 23 42 / 55%); }
+.calendar-asset-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.calendar-asset-dialog h4 { font-size: 18px; font-weight: 700; }
+.calendar-asset-dialog header button { min-height: 44px; padding: 0 12px; color: #0369a1; font-size: 14px; font-weight: 600; }
+.calendar-asset-dialog .asset-select { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.calendar-asset-dialog .asset-select__input { min-height: 46px; padding-right: 12px; font-size: 16px; }
+.calendar-asset-dialog .asset-select__toggle { display: none; }
+.calendar-asset-dialog .asset-select__help { margin: 5px 0 12px; font-size: 12px; }
+.calendar-asset-dialog .asset-select__listbox { position: static; flex: 1; min-height: 0; max-height: none; box-shadow: none; touch-action: pan-y; }
+.calendar-asset-dialog .asset-select__option { display: flex; flex-direction: column; justify-content: center; min-height: 48px; padding: 10px 12px; }
+.calendar-asset-dialog .asset-select__option-heading strong { font-size: 15px; }
+.calendar-asset-dialog .asset-select__option-detail, .calendar-asset-dialog .asset-select__code,
+.calendar-asset-dialog .asset-select__option--empty, .calendar-asset-dialog .asset-select__no-results { font-size: 13px; }
+@media (max-width: 639px), (pointer: coarse) and (max-height: 500px) {
+  .calendar-task-assignees { grid-template-columns: minmax(0, 1fr); }
+  .calendar-task-asset > .asset-select { display: none; }
+  .calendar-asset-trigger { display: flex; width: 100%; min-height: 46px; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; text-align: left; font-size: 14px; }
+  .calendar-asset-trigger span { min-width: 0; overflow-wrap: anywhere; }
+  .calendar-asset-trigger svg { flex-shrink: 0; color: #0369a1; }
+}
 @media (max-width: 639px) {
   .asset-select__listbox { max-height: 42vh; }
   .asset-select__option-heading { align-items: flex-start; }
@@ -647,3 +748,73 @@ body {
     flex-shrink: 0 !important;
   }
 }
+
+/* Directorio y alta de cuentas. */
+.user-primary { padding: .6rem 1rem; border-radius: .5rem; background: #0369a1; color: white; font-size: .875rem; font-weight: 600; }
+.user-primary:hover { background: #075985; }
+.user-directory button:disabled { opacity: .55; }
+.user-remove { min-height: 2.5rem; color: #be123c; font-weight: 600; }
+.user-roles { display: grid; grid-template-columns: auto 1fr; gap: .5rem 1rem; margin-top: .85rem; }
+.user-roles dt { font-weight: 600; }
+.user-create-dialog { margin: auto; width: min(30rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); border-radius: 1rem; padding: 1.5rem; color: #0f172a; background: white; overflow: auto; }
+.user-create-dialog::backdrop { background: rgb(15 23 42 / 55%); }
+.user-create-form { display: grid; gap: 1rem; }
+.user-create-form [role="alert"]:empty { display: none; }
+.user-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.user-fields label { display: grid; gap: .3rem; font-size: .8125rem; font-weight: 600; }
+.user-fields label[hidden] { display: none; }
+.user-full-width { grid-column: 1 / -1; }
+.user-fields input, .user-fields select { width: 100%; padding: .55rem .7rem; border: 1px solid #cbd5e1; border-radius: .5rem; background: white; font-weight: 400; }
+@media (max-width: 639px) {
+  .user-directory table thead { position: absolute; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; }
+  .user-directory table, .user-directory tbody { display: block; }
+  .user-directory tbody tr { display: grid; grid-template-columns: 1fr auto; padding: .75rem; gap: .4rem .75rem; align-items: center; }
+  .user-directory td { min-width: 0; padding: 0; overflow-wrap: anywhere; }
+  .user-directory td:first-child { grid-column: 1 / -1; }
+  .user-directory .user-devices { grid-column: 1 / -1; }
+  .user-directory td:last-child { grid-column: 1 / -1; }
+  .user-fields { grid-template-columns: minmax(0, 1fr); }
+  .user-fields input, .user-fields select { font-size: 1rem; }
+}
+
+.report-dialog {
+  box-sizing: border-box;
+  width: min(38rem, calc(100% - 1.5rem));
+  max-height: 90dvh;
+  margin: auto;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: .85rem;
+  color: #0f172a;
+  background: white;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.report-dialog::backdrop { background: rgb(15 23 42 / 55%); }
+.report-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .8rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.report-dialog-heading h2 { font-weight: 700; }
+.report-dialog-body { padding: 1rem; }
+.report-dialog-body > p { margin-bottom: .5rem; }
+.report-management-form { display: grid; gap: .8rem; }
+.report-management-form label { display: grid; gap: .3rem; min-width: 0; font-weight: 600; }
+.report-management-form label[hidden] { display: none; }
+.report-management-form select, .report-management-form textarea {
+  min-width: 0;
+  width: 100%;
+  padding: .55rem;
+  border: 1px solid #94a3b8;
+  border-radius: .45rem;
+  font-size: 1rem;
+  font-weight: 400;
+}
+.report-management-form [role="alert"] { color: #9f1239; }
+.report-management-form [role="alert"]:empty { display: none; }
+.report-existing-note, .report-interventions { white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-interventions li { margin-top: .65rem; }

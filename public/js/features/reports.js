@@ -1,7 +1,8 @@
 import { escapeHTML as reportDisplayText } from '../lib/html.js';
+import { editReport, showReportDetail } from '../ui/report-dialog.js';
 import { enhanceAssetSelect } from '../ui/asset-select.js';
 
-export function createReports({ db, getCurrentUser, saveDB }) {
+export function createReports({ db, saveDB }) {
   let reportFilterPriority = '';
   let reportFilterTechnician = '';
   let reportViewMode = 'kanban';
@@ -26,13 +27,13 @@ export function createReports({ db, getCurrentUser, saveDB }) {
 
   function reportActionButtons(report, canManageReports) {
     return `
-      ${canManageReports && report.status !== 'Finalizado' ? `<button type="button" onclick="window.manageReport(${Number(report.id)})" class="report-button report-button--primary" aria-label="Gestionar ${reportDisplayText(report.code)}">Gestionar</button>` : ''}
+      ${(canManageReports || report.can_update_status) && !report.closed && report.status !== 'Finalizado' ? `<button type="button" onclick="window.manageReport(${Number(report.id)})" class="report-button report-button--primary" aria-label="Gestionar ${reportDisplayText(report.code)}">Gestionar</button>` : ''}
       <button type="button" onclick="window.viewReportDetail(${Number(report.id)})" class="report-button report-button--secondary" aria-label="Ver detalle de ${reportDisplayText(report.code)}">Ver</button>
     `;
   }
 
   function renderReportCard(report, canManageReports) {
-    const technician = report.assigned_technician;
+    const technician = report.assigned_technician || report.last_technician;
     return `
       <article class="report-card" aria-label="Reporte ${reportDisplayText(report.code)}">
         <div class="report-card-top">
@@ -45,7 +46,7 @@ export function createReports({ db, getCurrentUser, saveDB }) {
         <div class="report-card-meta">
           <span class="report-technician" title="${reportDisplayText(technician ? `${technician.name}${technician.specialty ? ` — ${technician.specialty}` : ''}` : 'Sin asignar')}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>
-            <span>${reportDisplayText(technician?.name || 'Sin asignar')}</span>
+            <span>${reportDisplayText(technician?.name || (report.closed ? 'Sin técnico registrado' : 'Sin asignar'))}${report.closed && technician ? ' · Al cierre' : ''}</span>
           </span>
           <span class="report-date" title="${reportDisplayText(report.created_at)}">${reportDisplayText((report.created_at || '').split(' ')[0])}</span>
         </div>
@@ -59,7 +60,6 @@ export function createReports({ db, getCurrentUser, saveDB }) {
       renderReportHistoryView(container);
       return;
     }
-    const currentUser = getCurrentUser();
     const canManageReports = !!window.currentUserProfile.permissions.can_manage_reports;
     const allReports = db.reports || [];
     const technicians = [...new Map(allReports.filter(report => report.assigned_technician).map(report => [
@@ -70,7 +70,7 @@ export function createReports({ db, getCurrentUser, saveDB }) {
     const reports = allReports.filter(report =>
       (reportFilterPriority === '' || report.priority === reportFilterPriority) &&
       (technicianFilter === '' || (technicianFilter === 'unassigned'
-        ? !report.assigned_technician
+        ? !report.closed && !report.assigned_technician
         : String(report.assigned_technician?.id) === technicianFilter))
     );
     const columns = [...reportStatusPresentation];
@@ -141,14 +141,14 @@ export function createReports({ db, getCurrentUser, saveDB }) {
         ` : `
         <div class="report-list bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs text-slate-600">
+            <table role="table" class="record-table w-full text-left text-xs text-slate-600">
               <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                 <tr>
                   <th class="py-3 px-4">Reporte</th>
                   <th class="py-3 px-4">Activo</th>
                   <th class="py-3 px-4">Prioridad</th>
                   <th class="py-3 px-4">Estado</th>
-                  <th class="py-3 px-4">Técnico activo</th>
+                  <th class="py-3 px-4">Técnico responsable</th>
                   <th class="py-3 px-4">Informado por</th>
                   <th class="py-3 px-4">Fecha</th>
                   <th class="py-3 px-4">Descripción</th>
@@ -160,25 +160,25 @@ export function createReports({ db, getCurrentUser, saveDB }) {
                   <tr><td colspan="9" class="py-10 px-4 text-center text-slate-400">No hay reportes para el filtro seleccionado.</td></tr>
                 ` : reports.map(report => `
                   <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-3 px-4 font-mono font-bold text-slate-900">${reportDisplayText(report.code)}</td>
-                    <td class="py-3 px-4">
+                    <td data-label="Reporte" class="py-3 px-4 font-mono font-bold text-slate-900">${reportDisplayText(report.code)}</td>
+                    <td data-label="Activo" class="py-3 px-4">
                       <div class="font-semibold text-slate-800">${reportDisplayText(report.asset_name)}</div>
                       <div class="text-[11px] text-slate-400 font-mono">${reportDisplayText(report.asset_code)}</div>
                     </td>
-                    <td class="py-3 px-4">
+                    <td data-label="Prioridad" class="py-3 px-4">
                       ${reportPriorityBadge(report.priority)}
                     </td>
-                    <td class="py-3 px-4"><span class="report-state-badge report-tone--${columns.find(column => column.key === (report.status || 'Recibido/Derivado')).tone}"><span class="report-state-dot" aria-hidden="true"></span>${reportDisplayText(report.status || 'Recibido/Derivado')}</span></td>
-                    <td class="py-3 px-4">
-                      ${report.assigned_technician ? `<div class="font-medium text-slate-800">${reportDisplayText(report.assigned_technician.name)}</div><div class="text-[10px] text-slate-400">${reportDisplayText(report.assigned_technician.specialty)}</div>` : '<span class="text-slate-400">Sin asignar</span>'}
+                    <td data-label="Estado" class="py-3 px-4"><span class="report-state-badge report-tone--${columns.find(column => column.key === (report.status || 'Recibido/Derivado')).tone}"><span class="report-state-dot" aria-hidden="true"></span>${reportDisplayText(report.status || 'Recibido/Derivado')}</span></td>
+                    <td data-label="Técnico responsable" class="py-3 px-4">
+                      ${report.assigned_technician ? `<div class="font-medium text-slate-800">${reportDisplayText(report.assigned_technician.name)}</div><div class="text-[10px] text-slate-400">${reportDisplayText(report.assigned_technician.specialty)}</div>` : report.closed ? `<span>${reportDisplayText(report.last_technician?.name || 'Sin técnico registrado')} · Al cierre</span>` : '<span class="text-slate-400">Sin asignar</span>'}
                     </td>
-                    <td class="py-3 px-4">
+                    <td data-label="Informado por" class="py-3 px-4">
                       <div class="font-medium text-slate-800">${reportDisplayText(report.creator_name)}</div>
                       <div class="text-[10px] text-slate-400">${reportDisplayText(report.creator_role)}</div>
                     </td>
-                    <td class="py-3 px-4 font-mono text-[11px] text-slate-500">${reportDisplayText(report.created_at)}</td>
-                    <td class="py-3 px-4 max-w-sm truncate" title="${reportDisplayText(report.description)}">${reportDisplayText(report.description)}</td>
-                    <td class="py-3 px-4 text-right">
+                    <td data-label="Fecha" data-wide class="py-3 px-4 font-mono text-[11px] text-slate-500">${reportDisplayText(report.created_at)}</td>
+                    <td data-label="Descripción" data-wide class="py-3 px-4 max-w-sm truncate" title="${reportDisplayText(report.description)}">${reportDisplayText(report.description)}</td>
+                    <td data-label="Acción" data-wide class="py-3 px-4 text-right">
                       <div class="report-list-actions">${reportActionButtons(report, canManageReports)}</div>
                     </td>
                   </tr>
@@ -242,29 +242,70 @@ export function createReports({ db, getCurrentUser, saveDB }) {
         </header>
         <dl class="report-history-meta">
           <div><dt>Dispositivo</dt><dd>${text(report.asset_name || 'Sin nombre registrado')}<span class="report-history-secondary">${text(report.asset_code || 'Sin código')} · ID: ${text(report.asset_id ?? 'No registrado')}</span></dd></div>
-          <div><dt>Técnico asignado</dt><dd>${text(technician?.name || 'Sin asignar')}${technician ? `<span class="report-history-secondary">${text(technician.historical ? 'Último técnico asignado' : technician.specialty || `ID: ${technician.id}`)}</span>` : ''}</dd></div>
+          <div><dt>Técnico asignado</dt><dd>${text(technician?.name || (report.closed ? 'Sin técnico registrado' : 'Sin asignar'))}${technician ? `<span class="report-history-secondary">${text(technician.historical ? 'Último técnico asignado' : technician.specialty || `ID: ${technician.id}`)}</span>` : ''}</dd></div>
           <div><dt>Informado por</dt><dd>${text(report.creator_name || 'Sin autor registrado')}</dd></div>
-          <div><dt>Fecha de cierre</dt><dd>${report.closed_at ? text(reportHistoryDate(report.closed_at, true)) : report.status === 'Finalizado' ? 'Sin fecha registrada' : 'Pendiente de cierre'}</dd></div>
+          <div><dt>Fecha de cierre</dt><dd>${report.closed_at ? text(reportHistoryDate(report.closed_at, true)) : report.closed || report.status === 'Finalizado' ? 'Sin fecha registrada' : 'Pendiente de cierre'}</dd></div>
         </dl>
         <dl class="report-history-content">
           <div class="report-history-description"><dt>Reporte generado</dt><dd>${text(report.description || 'Sin descripción registrada.')}</dd></div>
           <div><dt>Informe de intervención</dt><dd>${text(report.action_report || 'Sin informe registrado.')}</dd></div>
           <div><dt>Diagnóstico</dt><dd>${text(report.final_diagnosis || 'Sin diagnóstico registrado.')}</dd></div>
         </dl>
+        ${report.inspections?.length ? `<section><h4>Inspecciones vinculadas</h4>${report.inspections.map(i => `<button type="button" class="report-button" onclick="window.viewInspection(${Number(i.asset_id)},${Number(i.id)})">Inspección #${Number(i.id)} · ${text(i.date)}</button>`).join('')}</section>` : ''}
+        ${report.interventions?.length ? `<section class="report-interventions"><h4>Intervenciones registradas</h4><ol>
+          ${report.interventions.map(note => `<li><strong>${text(note.stage)}</strong> · ${text(note.author || 'Autor sin registrar')} · ${text(reportHistoryDate(note.at, true))}<p>${text(note.text)}</p>${note.diagnosis ? `<p>${text(note.diagnosis)}</p>` : ''}</li>`).join('')}
+        </ol></section>` : ''}
         ${(report.assignment_history || []).length ? `
           <details class="report-history-assignments">
             <summary>Historial de asignaciones (${report.assignment_history.length})</summary>
-            <ol>${report.assignment_history.map(item => `<li><strong>${text(item.technician_name)}</strong><span>${text(reportHistoryDate(item.assigned_at, true))} — ${item.finished_at ? text(reportHistoryDate(item.finished_at, true)) : 'Asignación vigente'}</span>${item.reassignment_reason ? `<p>Motivo de reasignación: ${text(item.reassignment_reason)}</p>` : ''}</li>`).join('')}</ol>
+            <ol>${report.assignment_history.map(item => `<li><strong>${text(item.technician_name)}</strong><span>${text(reportHistoryDate(item.assigned_at, true))} — ${item.finished_at ? text(reportHistoryDate(item.finished_at, true)) : report.closed ? 'Fin sin fecha registrada' : 'Asignación vigente'}</span>${item.reassignment_reason ? `<p>Motivo de reasignación: ${text(item.reassignment_reason)}</p>` : ''}</li>`).join('')}</ol>
           </details>` : ''}
       </article>`;
   }
 
-  function renderReportHistoryResults(container) {
-    const reports = window.PreventiTIReportHistory.selectReports(db.reports || [], reportHistoryFilters);
-    const pages = Math.max(1, Math.ceil(reports.length / reportHistoryPageSize));
-    reportHistoryPage = Math.min(reportHistoryPage, pages);
+  let historyRequest = 0;
+  let historyController;
+  let searchTimer;
+  async function renderReportHistoryResults(container) {
+    clearTimeout(searchTimer);
+    historyController?.abort();
+    const request = ++historyRequest;
+    const results = container.querySelector('#report-history-results');
+    let resultCount, visible;
+    if (window.PreventiTIAPI?.reportHistory) {
+      historyController = new AbortController();
+      results.setAttribute('aria-busy', 'true');
+      try {
+        const response = await window.PreventiTIAPI.reportHistory(reportHistoryFilters, reportHistoryPage, historyController.signal);
+        if (request !== historyRequest || !results.isConnected) return;
+        resultCount = response.total;
+        const lastPage = Math.max(1, Math.ceil(resultCount / reportHistoryPageSize));
+        if (response.page > lastPage) {
+          reportHistoryPage = lastPage;
+          return renderReportHistoryResults(container);
+        }
+        reportHistoryPage = response.page;
+        visible = response.data;
+      } catch (error) {
+        if (request !== historyRequest || !results.isConnected) return;
+        results.textContent = 'No se pudo cargar el historial. ';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.textContent = 'Reintentar';
+        retry.onclick = () => renderReportHistoryResults(container);
+        results.append(retry);
+        return;
+      } finally {
+        if (request === historyRequest) results.removeAttribute('aria-busy');
+      }
+    } else {
+      const matches = window.PreventiTIReportHistory.selectReports(db.reports || [], reportHistoryFilters);
+      resultCount = matches.length;
+      reportHistoryPage = Math.min(reportHistoryPage, Math.max(1, Math.ceil(resultCount / reportHistoryPageSize)));
+      visible = matches.slice((reportHistoryPage - 1) * reportHistoryPageSize, reportHistoryPage * reportHistoryPageSize);
+    }
+    const pages = Math.max(1, Math.ceil(resultCount / reportHistoryPageSize));
     const start = (reportHistoryPage - 1) * reportHistoryPageSize;
-    const visible = reports.slice(start, start + reportHistoryPageSize);
     const groups = new Map();
     visible.forEach(report => {
       const key = window.PreventiTIReportHistory.dateKey(report.created_at);
@@ -272,10 +313,10 @@ export function createReports({ db, getCurrentUser, saveDB }) {
       groups.get(key).push(report);
     });
     const total = (db.reports || []).length;
-    container.querySelector('#report-history-count').textContent = `${reports.length} de ${total} ${total === 1 ? 'reporte' : 'reportes'}${reports.length > reportHistoryPageSize ? ` · Mostrando ${start + 1}–${start + visible.length}` : ''}`;
+    container.querySelector('#report-history-count').textContent = `${resultCount} de ${total} ${total === 1 ? 'reporte' : 'reportes'}${resultCount > reportHistoryPageSize ? ` · Mostrando ${start + 1}–${start + visible.length}` : ''}`;
     const activeFilters = ['status', 'asset', 'technician', 'from', 'to'].filter(key => reportHistoryFilters[key]).length;
     container.querySelector('#report-history-toggle').textContent = activeFilters ? `Filtros (${activeFilters})` : 'Filtros';
-    container.querySelector('#report-history-results').innerHTML = reports.length ?
+    container.querySelector('#report-history-results').innerHTML = resultCount ?
       [...groups].map(([date, items]) => `
         <section class="report-history-day" aria-label="${reportDisplayText(reportHistoryDate(date))}">
           <h2>${reportDisplayText(reportHistoryDate(date))}</h2>
@@ -302,7 +343,7 @@ export function createReports({ db, getCurrentUser, saveDB }) {
     const technicians = [...new Map(reports.map(helpers.technicianFor).filter(Boolean).map(item => [String(item.id), item])).values()]
       .sort((a, b) => String(a.name).localeCompare(String(b.name), 'es'));
     // Build options from reports, including devices that are no longer in the inventory.
-    const inventoryAssets = new Map((db.assets || []).map(asset => [String(asset.id), asset]));
+    const inventoryAssets = new Map([...(db.assets || []), ...(db.archivedAssets || [])].map(asset => [String(asset.id), asset]));
     const assets = [...new Map(reports.map(report => [helpers.assetKey(report), report])).entries()]
       .map(([key, report]) => {
         const inventoryAsset = report.asset_id != null ? inventoryAssets.get(String(report.asset_id)) : null;
@@ -356,13 +397,25 @@ export function createReports({ db, getCurrentUser, saveDB }) {
     });
     container.querySelector('#close-report-history').addEventListener('click', () => {
       reportHistoryOpen = false;
+      clearTimeout(searchTimer);
+      historyController?.abort();
       renderReportsView(container);
       container.querySelector('#open-report-history').focus();
     });
     container.querySelector('#report-history-search').addEventListener('input', event => {
       reportHistoryFilters.query = event.target.value;
       reportHistoryPage = 1;
-      renderReportHistoryResults(container);
+      if (window.PreventiTIAPI?.reportHistory) {
+        clearTimeout(searchTimer);
+        historyRequest++;
+        historyController?.abort();
+        const search = event.target;
+        searchTimer = setTimeout(() => {
+          if (search.isConnected) renderReportHistoryResults(container);
+        }, 180);
+      } else {
+        renderReportHistoryResults(container);
+      }
     });
     container.querySelector('#report-history-sort').addEventListener('change', event => {
       reportHistoryFilters.sort = event.target.value;
@@ -397,91 +450,13 @@ export function createReports({ db, getCurrentUser, saveDB }) {
     renderReportHistoryResults(container);
   }
 
-  window.viewReportDetail = function (reportId) {
-    const report = (db.reports || []).find(item => item.id === reportId);
-    if (!report) return;
-    const activeTechnician = report.assigned_technician ? `${report.assigned_technician.name} (${report.assigned_technician.specialty || 'Sin especialidad'})` : 'Sin asignar';
-    const history = (report.assignment_history || []).map(item => `- ${item.technician_name}: ${item.assigned_at || 'sin fecha'}${item.finished_at ? ` a ${item.finished_at}` : ' (activo)'}${item.reassignment_reason ? ` — ${item.reassignment_reason}` : ''}`).join('\n') || 'Sin historial de asignaciones.';
-    alert(`REPORTE: ${report.code}\n\nActivo: ${report.asset_code} - ${report.asset_name}\nInformado por: ${report.creator_name}\nPrioridad: ${report.priority}\nEstado: ${report.status || 'Recibido/Derivado'}\nTécnico activo: ${activeTechnician}\nFecha: ${report.created_at}\n\nDescripción:\n${report.description}\n\nInforme de accionar:\n${report.action_report || 'Pendiente'}\n\nDiagnóstico final:\n${report.final_diagnosis || 'Pendiente'}\n\nHistorial de asignaciones:\n${history}`);
-  };
+  window.viewReportDetail = id => showReportDetail(id, renderReportHistoryCard);
 
-  window.manageReport = async function (reportId) {
-    const report = (db.reports || []).find(item => item.id === reportId);
-    if (!report || !window.PreventiTIAPI) return;
-
-    const action = prompt('Seleccione una acción:\n1. Asignar o reasignar técnico\n2. Avanzar el estado del reporte');
-    if (!action) return;
-
-    try {
-      if (action === '1') {
-        const techniciansResponse = await window.PreventiTIAPI.reportTechnicians();
-        const technicians = techniciansResponse.data || [];
-        const options = technicians.map(item => `${item.id}: ${item.name} — ${item.specialty}`).join('\n');
-        const technicianId = Number.parseInt(prompt(`Seleccione el ID del técnico:\n${options}`), 10);
-        if (!technicians.some(item => item.id === technicianId)) {
-          window.showToast('Selección inválida', 'Debe elegir un técnico disponible.', 'warning');
-          return;
-        }
-        let reason = null;
-        if (report.assigned_technician) {
-          reason = prompt('Motivo de la reasignación (mínimo 5 caracteres):');
-          if (!reason || reason.trim().length < 5) {
-            window.showToast('Motivo requerido', 'La reasignación debe conservar su motivo.', 'warning');
-            return;
-          }
-        }
-        const response = await window.PreventiTIAPI.assignReport(reportId, technicianId, reason);
-        Object.assign(report, response.data);
-        saveDB();
-        window.showToast('Asignación actualizada', response.message, 'success');
-        return;
-      }
-
-      if (action === '2') {
-        const transitions = {
-          'Recibido/Derivado': [{ key: '1', status: 'En curso', label: 'Pasar a En curso' }],
-          'En curso': [
-            { key: '1', status: 'Diagnóstico', label: 'Pasar a Diagnóstico' },
-            { key: '2', status: 'Finalizado', label: 'Finalizar reporte' },
-          ],
-          'Diagnóstico': [{ key: '1', status: 'Finalizado', label: 'Finalizar reporte' }],
-        };
-        const available = transitions[report.status || 'Recibido/Derivado'] || [];
-        if (!available.length) {
-          window.showToast('Sin transición disponible', 'El reporte ya está finalizado o tiene un estado no válido.', 'warning');
-          return;
-        }
-        const selected = prompt(available.map(item => `${item.key}. ${item.label}`).join('\n'));
-        const next = available.find(item => item.key === selected);
-        if (!next) return;
-        let actionReport = null;
-        let finalDiagnosis = null;
-        if (next.status === 'Diagnóstico' || next.status === 'Finalizado') {
-          actionReport = prompt('Informe del accionar realizado (mínimo 5 caracteres):');
-          if (!actionReport || actionReport.trim().length < 5) {
-            window.showToast('Informe requerido', 'Debe registrar el accionar realizado.', 'warning');
-            return;
-          }
-        }
-        if (next.status === 'Diagnóstico') {
-          finalDiagnosis = prompt('Diagnóstico final del dispositivo (mínimo 5 caracteres):');
-          if (!finalDiagnosis || finalDiagnosis.trim().length < 5) {
-            window.showToast('Diagnóstico requerido', 'Debe registrar el diagnóstico final.', 'warning');
-            return;
-          }
-        }
-        const response = await window.PreventiTIAPI.transitionReport(reportId, next.status, actionReport, finalDiagnosis);
-        Object.assign(report, response.data);
-        saveDB();
-        window.showToast('Estado actualizado', response.message, 'success');
-        return;
-      }
-
-      window.showToast('Acción inválida', 'Seleccione 1 o 2.', 'warning');
-    } catch (error) {
-      window.showToast('No se pudo gestionar el reporte', error.message, 'danger');
-    }
-  };
+  window.manageReport = id => editReport(id, updated => {
+    const record = db.reports.find(report => report.id === id);
+    if (record) Object.assign(record, updated);
+    saveDB();
+  });
 
   window.openNotifications = function () {
     window.location.hash = 'dashboard';
@@ -497,15 +472,15 @@ export function createReports({ db, getCurrentUser, saveDB }) {
         const response = await window.PreventiTIAPI.markNotificationRead(notificationId);
         Object.assign(notification, response.data);
         saveDB();
+        window.PreventiTIAPI.reportSaved?.();
       } catch (error) {
         window.showToast('No se pudo actualizar', error.message, 'danger');
         return;
       }
     }
 
-    const report = notification.report;
-    if (report) {
-      alert(`REPORTE: ${report.code}\n\nActivo: ${report.asset_code} - ${report.asset_name}\nInformado por: ${report.creator_name}\nPrioridad: ${report.priority}\n\nDescripción:\n${report.description}`);
+    if (notification.report_id || notification.report?.id) {
+      await window.viewReportDetail(notification.report_id || notification.report.id);
     }
   };
 

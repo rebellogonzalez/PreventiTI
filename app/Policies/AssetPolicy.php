@@ -39,11 +39,10 @@ class AssetPolicy
 
     /**
      * Determina si el usuario puede dar de alta un activo (RF-02).
-     * Exclusivo para Administrador (Jerarquía 1).
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->hasHierarchyAtLeast(2);
     }
 
     /**
@@ -57,19 +56,9 @@ class AssetPolicy
 
     /**
      * Determina si el usuario puede aplicar baja lógica a un activo (RF-02 / CP-02).
-     * Exclusivo para Administrador.
      */
     public function toggleActive(User $user, Asset $asset): bool
     {
-        return $user->isAdmin();
-    }
-
-    /**
-     * La baja física es excepcional: solo la puede solicitar el Jefe Técnico
-     * y únicamente cuando el activo no posee historial que conservar.
-     */
-    public function purge(User $user, Asset $asset): bool
-    {
-        return $user->isLeader();
+        return $user->hasHierarchyAtLeast(2);
     }
 }

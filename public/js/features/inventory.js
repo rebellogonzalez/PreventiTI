@@ -1,4 +1,27 @@
-export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
+function archiveTable(assets, hasDevices, canManage) {
+  const esc = window.PreventiTIInventory.escapeHTML;
+  if (!assets.length) {
+    return `<p class="p-6 text-sm text-slate-500 text-center">${hasDevices ? 'No hay dispositivos retirados que coincidan con los filtros.' : 'Todavía no hay dispositivos dados de baja.'}</p>`;
+  }
+  return `<table role="table" class="record-table w-full text-left text-xs text-slate-600">
+    <thead class="bg-slate-50 text-slate-700"><tr>
+      <th class="py-3 px-4">Dispositivo</th><th class="py-3 px-4">Última ubicación</th>
+      <th class="py-3 px-4">Fecha de baja</th><th class="py-3 px-4">Acciones</th>
+    </tr></thead><tbody class="divide-y divide-slate-100">
+    ${assets.map(asset => `<tr data-asset-id="${asset.id}">
+      <td data-label="Dispositivo" data-wide class="py-3 px-4"><strong class="text-slate-900">${esc(asset.name)}</strong>
+        <div class="font-mono text-slate-500">${esc(asset.code)} · ${esc(asset.serial)}</div></td>
+      <td data-label="Última ubicación" class="py-3 px-4">${esc(asset.location_name)}</td>
+      <td data-label="Fecha de baja" class="py-3 px-4">${asset.retired_at ? new Date(asset.retired_at).toLocaleDateString('es-UY') : 'Sin fecha registrada'}</td>
+      <td data-label="Acciones" data-wide class="py-3 px-4"><div class="flex flex-wrap gap-3">
+        <button onclick="window.viewAssetDetail(${asset.id})" class="font-semibold text-sky-700">Ver historial</button>
+        ${canManage ? `<button onclick="window.toggleAssetActive(${asset.id})" class="font-semibold text-slate-700">Reincorporar</button>` : ''}
+      </div></td></tr>`).join('')}
+    </tbody></table>`;
+}
+
+export function createInventory({ db, getRoute, navigateTo }) {
+  let showArchive = false;
   let invSearch = '';
   let invCategory = '';
   let invLocation = '';
@@ -7,6 +30,7 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
   const invPerPage = 12;
 
   window.filterInventarioByAlert = function (alertType) {
+    showArchive = false;
     // Dashboard shortcuts start a fresh search so their totals match the results.
     invSearch = '';
     invCategory = '';
@@ -20,8 +44,7 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
   function renderInventarioView(container) {
     const helpers = window.PreventiTIInventory;
     const esc = helpers.escapeHTML;
-    const user = getCurrentUser();
-    const canManageAssets = user.role === 'administrador' || db.currentUserRole === 'administrador';
+    const { can_manage_assets: canManageAssets } = window.currentUserProfile.permissions;
     const inventoryBadge = document.getElementById('badge-nav-inventario');
     if (inventoryBadge) inventoryBadge.textContent = db.assets.length;
 
@@ -30,13 +53,20 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Inventario de dispositivos</h1>
-            <p class="text-sm text-slate-500 mt-0.5">Consulta los dispositivos registrados, su ubicación y su estado actual.</p>
+            <p class="text-sm text-slate-500 mt-0.5">${showArchive ? 'Consulta la ficha, los reportes y los mantenimientos de los dispositivos dados de baja.' : 'Consulta los dispositivos registrados, su ubicación y su estado actual.'}</p>
           </div>
-          ${canManageAssets ? `
+          ${canManageAssets && !showArchive ? `
             <button onclick="window.openCreateAsset()" class="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold shadow-sm transition">
-              <i data-lucide="plus" class="w-4 h-4"></i> Alta de Nuevo Activo
+              <i data-lucide="plus" class="w-4 h-4"></i> Agregar dispositivo
             </button>
           ` : ''}
+        </div>
+
+        <div class="flex flex-wrap gap-2" role="group" aria-label="Listados del inventario">
+          ${[[false, 'Inventario actual', db.assets.length], [true, 'Histórico de dispositivos', db.archivedAssets.length]].map(([archive, label, count]) => `
+            <button type="button" data-archive="${archive}" aria-pressed="${showArchive === archive}" class="px-4 py-2 rounded-lg text-sm font-semibold ${showArchive === archive ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-700'}">
+              ${label} (${count})
+            </button>`).join('')}
         </div>
 
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -49,7 +79,7 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
                        class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100">
               </div>
             </div>
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-2" ${showArchive ? 'hidden' : ''}>
               <label for="select-filter-alert" class="block text-xs font-semibold text-slate-700 mb-1.5">Estado</label>
               <select id="select-filter-alert" aria-controls="inventory-results" class="w-full py-2 px-3 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500 bg-white">
                 <option value="">Todos los estados</option>
@@ -80,6 +110,13 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
       </div>
     `;
 
+    container.querySelectorAll('[data-archive]').forEach(button => {
+      button.addEventListener('click', () => {
+        showArchive = button.dataset.archive === 'true';
+        window.clearAssetFilters();
+        container.querySelector(`[data-archive="${showArchive}"]`).focus();
+      });
+    });
     // Update only results, keeping the input, cursor and filter focus intact.
     container.querySelector('#input-search-assets').addEventListener('input', event => {
       invSearch = event.target.value;
@@ -103,20 +140,20 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
   function renderInventoryResults(container) {
     const helpers = window.PreventiTIInventory;
     const esc = helpers.escapeHTML;
-    const user = getCurrentUser();
-    const canManageAssets = user.role === 'administrador' || db.currentUserRole === 'administrador';
-    const filtered = helpers.selectAssets(db.assets, { query: invSearch, category: invCategory, location: invLocation, status: invAlert });
+    const { can_manage_assets: canManageAssets, can_edit_assets: canEditAssets } = window.currentUserProfile.permissions;
+    const assets = showArchive ? db.archivedAssets : db.assets;
+    const filtered = helpers.selectAssets(assets, { query: invSearch, category: invCategory, location: invLocation, status: invAlert });
     const totalPages = Math.max(1, Math.ceil(filtered.length / invPerPage));
     invPage = Math.max(1, Math.min(invPage, totalPages));
     const startIdx = (invPage - 1) * invPerPage;
     const paginated = filtered.slice(startIdx, startIdx + invPerPage);
-    container.querySelector('#inventory-count').textContent = `${filtered.length} de ${db.assets.length} dispositivos${filtered.length ? ` · Mostrando ${startIdx + 1}–${startIdx + paginated.length}` : ''}`;
+    container.querySelector('#inventory-count').textContent = `${filtered.length} de ${assets.length} dispositivos${filtered.length ? ` · Mostrando ${startIdx + 1}–${startIdx + paginated.length}` : ''}`;
     container.querySelector('#inventory-clear-filters').hidden = !(invSearch || invCategory || invLocation || invAlert);
     container.querySelector('#inventory-results').innerHTML = `
         <!-- Tabla -->
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="min-w-[1100px] w-full text-left text-xs text-slate-600">
+            ${showArchive ? archiveTable(paginated, assets.length > 0, canManageAssets) : `<table role="table" class="record-table min-w-[1100px] w-full text-left text-xs text-slate-600">
               <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                 <tr>
                   <th class="py-3 px-4">Código / Serie</th>
@@ -140,25 +177,24 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
                   </tr>
                 ` : paginated.map(a => {
                   const status = helpers.statusFor(a);
-                  const retired = helpers.isRetired(a);
                   return `
                     <tr data-asset-id="${a.id}" class="hover:bg-slate-50/80 transition ${!a.active ? 'opacity-60 bg-slate-50' : ''}">
-                      <td class="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
+                      <td data-label="Código / Serie" class="py-3 px-4 font-mono font-semibold text-slate-900 whitespace-nowrap">
                         <div>${esc(a.code)}</div>
                         <div class="text-[10px] text-slate-400">${esc(a.serial)}</div>
                       </td>
-                      <td class="py-3 px-4 font-medium text-slate-800">
+                      <td data-label="Equipo / Nombre" class="py-3 px-4 font-medium text-slate-800">
                         <div class="truncate max-w-[200px]" title="${esc(a.name)}">${esc(a.name)}</div>
-                        ${retired ? '<span class="text-[10px] font-bold text-rose-600 uppercase">Baja lógica</span>' : !a.active ? `<span class="text-[10px] font-bold text-rose-600 uppercase">${esc(a.state)}</span>` : ''}
+                        ${!a.active ? `<span class="text-[10px] font-bold text-rose-600 uppercase">${esc(a.state)}</span>` : ''}
                       </td>
-                      <td class="py-3 px-4">
+                      <td data-label="Categoría" class="py-3 px-4">
                         <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-medium">${esc(a.category_name)}</span>
                       </td>
-                      <td class="py-3 px-4 text-slate-600 truncate max-w-[140px]" title="${esc(a.location_name)}">
+                      <td data-label="Ubicación" class="py-3 px-4 text-slate-600 truncate max-w-[140px]" title="${esc(a.location_name)}">
                         ${esc(a.location_name)}
                       </td>
-                      <td class="py-3 px-4 text-slate-600">${esc(a.responsible)}</td>
-                      <td class="py-3 px-4">
+                      <td data-label="Responsable" class="py-3 px-4 text-slate-600">${esc(a.responsible)}</td>
+                      <td data-label="Próx. service" class="py-3 px-4">
                         <div class="font-medium ${a.days_to_maintenance != null && a.days_to_maintenance <= 7 ? 'text-amber-700 font-bold' : 'text-slate-700'}">
                           ${esc(a.next_maintenance || 'Sin fecha registrada')}
                         </div>
@@ -166,7 +202,7 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
                           ${a.days_to_maintenance == null ? 'Sin programación' : a.days_to_maintenance < 0 ? `<span class="text-rose-600 font-bold">Vencido (${Math.abs(a.days_to_maintenance)}d)</span>` : `Faltan ${a.days_to_maintenance}d`}
                         </div>
                       </td>
-                      <td class="py-3 px-4">
+                      <td data-label="Consumible" class="py-3 px-4">
                         ${a.has_consumable && a.consumable_level != null ? `
                           <div>
                             <div class="flex items-center justify-between text-[11px] mb-1">
@@ -178,26 +214,28 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
                           </div>
                         ` : `<span class="text-slate-300">—</span>`}
                       </td>
-                      <td class="py-3 px-4">
+                      <td data-label="Estado" class="py-3 px-4">
                         <span class="badge-status badge-${status} whitespace-nowrap">
                           <span class="dot" aria-hidden="true"></span>
                           ${helpers.statuses[status]}
                         </span>
                       </td>
-                      <td class="py-3 px-4 text-right">
+                      <td data-label="Acciones" data-wide class="py-3 px-4 text-right">
                         <div class="flex items-center justify-end gap-1.5">
-                          <button onclick="window.viewAssetDetail(${a.id})" title="Ficha Técnica" class="p-1 text-slate-500 hover:text-sky-600 hover:bg-slate-100 rounded">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
+                          <button onclick="window.viewAssetDetail(${a.id})" title="Ficha Técnica" class="inline-flex items-center gap-1 p-1 text-slate-500 hover:text-sky-600 hover:bg-slate-100 rounded">
+                            <i data-lucide="eye" class="w-4 h-4"></i><span class="sm:hidden">Ver ficha</span>
                           </button>
                           <button onclick="window.openCreateReportForAsset(${a.id})" title="Reportar Falla" class="p-1 text-slate-500 hover:text-amber-600 hover:bg-slate-100 rounded">
                             <i data-lucide="alert-circle" class="w-4 h-4"></i>
                           </button>
-                          ${canManageAssets ? `
+                          ${canEditAssets ? `
                             <button onclick="window.openEditAsset(${a.id})" title="Editar activo" aria-label="Editar ${esc(a.code)}" class="p-1 text-slate-500 hover:text-sky-600 hover:bg-slate-100 rounded">
                               <i data-lucide="pencil" class="w-4 h-4"></i>
                             </button>
-                            <button onclick="window.toggleAssetActive(${a.id})" title="${retired ? 'Revertir baja y recuperar estado anterior' : 'Dar de baja lógica'}" class="p-1 ${retired ? 'text-rose-600 hover:text-emerald-600' : 'text-slate-400 hover:text-rose-600'} hover:bg-slate-100 rounded">
-                              <i data-lucide="${retired ? 'rotate-ccw' : 'trash-2'}" class="w-4 h-4"></i>
+                          ` : ''}
+                          ${canManageAssets ? `
+                            <button onclick="window.toggleAssetActive(${a.id})" title="Dar de baja" aria-label="Dar de baja a ${esc(a.code)}" class="p-1 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded">
+                              <i data-lucide="archive" class="w-4 h-4"></i>
                             </button>
                           ` : ''}
                         </div>
@@ -206,7 +244,7 @@ export function createInventory({ db, getCurrentUser, getRoute, navigateTo }) {
                   `;
                 }).join('')}
               </tbody>
-            </table>
+            </table>`}
           </div>
 
           <!-- Paginador -->

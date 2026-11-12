@@ -76,6 +76,44 @@ class AuthAndRBACTest extends TestCase
         $this->actingAs($laura)->getJson('/api/activos/77')->assertStatus(403);
     }
 
+    public function test_reporting_catalog_and_submission_respect_room_access_for_each_role(): void
+    {
+        $restrictedRooms = ['Sala de servidores / IT', 'Sala de personal técnico', 'Oficina de gerencia y coordinación', 'Administración y recursos humanos'];
+        $assets = Asset::inInventory()->with('ubicacionDetalle')->get();
+        $restricted = $assets->whereIn('ubicacionDetalle.sala', $restrictedRooms);
+        $this->assertCount(4, $restricted->pluck('ubicacionDetalle.sala')->unique());
+        $payload = ['priority' => 'Media', 'description' => 'El dispositivo presenta una falla.'];
+        $employee = User::findOrFail(9);
+        $this->actingAs($employee);
+        $catalog = $this->getJson('/api/reportes/activos-disponibles')->assertOk()->json('data');
+        $this->assertEqualsCanonicalizing($assets->diff($restricted)->modelKeys(), array_column($catalog, 'id'));
+        $before = [Report::count(), Alert::count(), Audit::count()];
+        foreach ($restricted->unique('ubicacionDetalle.sala') as $asset) {
+            $this->postJson('/api/reportes', ['asset_id' => $asset->id, ...$payload])
+                ->assertUnprocessable()->assertJsonValidationErrors('asset_id');
+        }
+        $this->assertSame($before, [Report::count(), Alert::count(), Audit::count()]);
+
+        foreach ([1, 4, 5] as $userId) {
+            $this->actingAs(User::findOrFail($userId));
+            $catalog = $this->getJson('/api/reportes/activos-disponibles')->assertOk()->json('data');
+            $this->assertEqualsCanonicalizing($assets->modelKeys(), array_column($catalog, 'id'));
+            $this->postJson('/api/reportes', ['asset_id' => $restricted->first()->id, ...$payload])->assertCreated();
+        }
+    }
+
+    public function test_moving_a_device_revokes_employee_reporting_access_before_submission(): void
+    {
+        $this->actingAs(User::findOrFail(9));
+        $asset = Asset::findOrFail(1);
+        $this->getJson('/api/reportes/activos-disponibles')->assertOk()->assertJsonFragment(['id' => $asset->id]);
+        $asset->ubicacionDetalle()->update(['sala' => 'Sala de personal técnico']);
+        $this->postJson('/api/reportes', ['asset_id' => $asset->id, 'priority' => 'Alta', 'description' => 'Reporte desde una lista anterior.'])
+            ->assertUnprocessable()->assertJsonValidationErrors('asset_id');
+        $asset->ubicacionDetalle()->delete();
+        $this->getJson('/api/reportes/activos-disponibles')->assertOk()->assertJsonMissing(['id' => $asset->id]);
+    }
+
     public function test_authorized_operations_use_hito_tables(): void
     {
         $admin = User::findOrFail(1);

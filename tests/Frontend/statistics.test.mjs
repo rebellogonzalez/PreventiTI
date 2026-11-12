@@ -8,6 +8,20 @@ function moduleURL(url) {
 }
 const { createStatistics } = await import(moduleURL(new URL('../../public/js/features/statistics.js', import.meta.url)));
 
+test('staff changes keep separate incident totals for accounts with the same name', () => {
+  const db = {
+    assets: [], users: [
+      { id: 10, name: 'Andrea Pérez', email: 'primera@example.test', active: false },
+      { id: 11, name: 'Andrea Pérez', email: 'segunda@example.test', active: true },
+    ],
+    reports: [10, 10, 11].map(creator_id => ({ creator_id, creator_name: 'Andrea Pérez' })),
+  };
+  const view = {};
+  createStatistics({ db }).renderAnalisisView(view);
+  assert.match(view.innerHTML, /Cuenta de baja[\s\S]*?primera@example\.test[\s\S]*?2 reportes/);
+  assert.match(view.innerHTML, /segunda@example\.test[\s\S]*?1 reporte/);
+});
+
 test('statistics render server costs, consistent currency and recorded monthly counts without fixed demo totals', t => {
   const originals = { window: globalThis.window, document: globalThis.document, setTimeout: globalThis.setTimeout };
   const charts = [];

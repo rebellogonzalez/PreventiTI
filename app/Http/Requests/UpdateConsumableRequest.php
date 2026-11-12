@@ -15,6 +15,7 @@ class UpdateConsumableRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'task_id' => 'nullable|integer|min:1',
             'level' => 'required|numeric|min:0|max:100',
         ];
     }

@@ -30,7 +30,7 @@ class FloorplanService
             $saved = $positions->get($asset->id);
             $valid = $saved && $saved->floor === $floor && $saved->room === $name;
             $reports = $asset->reportes;
-            $activeReports = $reports->filter(fn ($r) => ! in_array($r->estado_reporte, ['Finalizado', 'Resuelto', 'Cerrado', 'Cancelado'], true));
+            $activeReports = $reports->filter(fn ($r) => ! $r->isClosed());
             $record = $serialize($asset);
             $state = mb_strtolower($asset->estado_activo);
             $status = match (true) {

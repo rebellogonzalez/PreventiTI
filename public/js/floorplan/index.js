@@ -1,4 +1,5 @@
 import { FloorplanScene } from './scene.js';
+import { formatTimestamp } from '../lib/timestamps.js';
 import { STATES, stateOf, resolveLayout, filterAssets, escapeHTML as esc, deviceKind } from './model.js';
 
 const icons = { terminal: '▣', laptop: '▱', printer: '▤', camera: '◉', climate: '≋', display: '▥', power: 'ϟ', generic: '◇' };
@@ -12,10 +13,13 @@ class FloorplanView {
   constructor(container) {
     this.container = container; this.filters = { query: '', category: '', status: '', room: '' };
     this.abort = new AbortController(); this.requestAbort = new AbortController();
+    this.canManageAssets = !!window.currentUserProfile?.permissions?.can_manage_assets;
     this.mobileLayout = matchMedia('(max-width: 1023px)');
     this.touchLayout = matchMedia('(pointer: coarse), (max-width: 1023px)');
     container.innerHTML = `<section id="device-map-view" class="fp-app">
-      <header class="fp-header"><div><p class="fp-eyebrow">INFRAESTRUCTURA / VISTA ESPACIAL</p><h1>Mapa de operaciones <span>3D</span></h1><p>Un piso. Todos tus activos. El contexto para actuar.</p></div><div class="fp-sync" role="status">Conectando con el inventario…</div></header>
+      <header class="fp-header"><div><p class="fp-eyebrow">INFRAESTRUCTURA / VISTA ESPACIAL</p><h1>Mapa de operaciones <span>3D</span></h1><p>Un piso. Todos tus activos. El contexto para actuar.</p></div><div class="fp-header-actions">
+        ${this.canManageAssets ? '<button type="button" data-action="create-asset" class="fp-primary">Agregar dispositivo</button>' : ''}
+        <div class="fp-sync" role="status">Conectando con el inventario…</div></div></header>
       <div class="fp-metrics" aria-label="Resumen del inventario"></div>
       <div class="fp-toolbar">
         <label class="fp-search"><span aria-hidden="true">⌕</span><input type="search" data-filter="query" aria-label="Buscar activos" placeholder="Buscar activo, ID o responsable…"></label>
@@ -73,6 +77,14 @@ class FloorplanView {
       const asset = event.target.closest('[data-asset-id]')?.dataset.assetId;
       if (room) { this.selectRoom(room); if (this.mobileLayout.matches) this.scrollTo('.fp-stage'); }
       if (asset) { this.selectAsset(Number(asset)); if (this.mobileLayout.matches) this.scrollTo('.fp-panel'); }
+      if (action === 'create-asset' && this.canManageAssets) {
+        const selectedRoom = this.data?.rooms.find(item => item.id === this.filters.room);
+        window.openCreateAsset(selectedRoom?.location_id);
+      }
+      if (action === 'retire-asset' && this.canManageAssets) {
+        const selected = this.data.assets.find(item => item.id === this.selectedAsset);
+        if (selected) window.toggleAssetActive(selected.id, selected);
+      }
       if (action === 'refresh') this.refresh();
       if (action === 'home') this.selectRoom(null);
       if (action === 'top' || action === 'iso') this.scene?.focus(this.filters.room, action === 'top');
@@ -169,7 +181,7 @@ class FloorplanView {
         const select = this.root.querySelector(`[data-filter="${key}"]`);
         if (select.value !== this.filters[key]) select.value = this.filters[key];
       }
-      const time = new Date(this.data.updated_at).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const time = formatTimestamp(this.data.updated_at, { includeDate: false });
       this.root.querySelector('.fp-sync').textContent = `● Sincronizado ${time} · cada 30 s`;
       this.root.querySelector('.fp-sync').classList.remove('is-stale');
       if (changed || needsScene) this.update();
@@ -261,7 +273,8 @@ class FloorplanView {
       <div class="fp-incidents"><h3>Incidencias activas <span>${asset.active_incidents}</span></h3>${asset.reports.length ? asset.reports.map(r => `<article><strong>${esc(r.code)} · ${esc(r.state)}</strong><p>${esc(r.description)}</p></article>`).join('') : `<p>${asset.active_incidents ? 'Hay incidencias activas. Tu perfil no tiene acceso a su descripción.' : 'Sin reportes visibles para este activo.'}</p>`}</div>
       <div class="fp-position"><h3>Posición en la sala</h3><p>${p.source === 'confirmed' ? '✓ Coordenadas confirmadas' : asset.position_stale ? 'Ubicación modificada: confirma una nueva posición.' : '◇ Distribución automática · sin confirmar'}</p>
       ${canEditPosition ? `<details><summary>Ajustar coordenadas</summary><form class="fp-position-form"><p>X y Z: porcentaje del ancho y fondo de la sala. Guardar confirma la posición visual, sin cambiar la ubicación del inventario.</p><div class="fp-position-grid"><label>X (%)<input name="x" type="number" min="5" max="95" step="0.1" value="${(p.x * 100).toFixed(1)}" required></label><label>Z (%)<input name="z" type="number" min="5" max="95" step="0.1" value="${(p.z * 100).toFixed(1)}" required></label><label>Altura (m)<input name="elevation" type="number" min="0" max="4" step="0.05" value="${p.elevation}" required></label><label>Giro (°)<input name="rotation" type="number" min="0" max="360" step="1" value="${p.rotation}" required></label></div><button type="submit" class="fp-primary">Guardar posición</button><p class="fp-form-message" role="status"></p></form></details>` : this.data.can_edit_positions ? '<p>Para confirmar coordenadas, registra primero el piso y la sala del activo en el inventario.</p>' : ''}</div>
-      ${asset.can_view_detail ? '<button data-action="detail" class="fp-primary fp-detail-button">Abrir ficha técnica ↗</button>' : ''}`;
+      ${asset.can_view_detail ? '<button data-action="detail" class="fp-primary fp-detail-button">Abrir ficha técnica ↗</button>' : ''}
+      ${this.canManageAssets ? '<button type="button" data-action="retire-asset" class="fp-retire">Dar de baja dispositivo</button>' : ''}`;
   }
 
   async savePosition(form) {

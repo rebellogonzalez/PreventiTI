@@ -24,4 +24,14 @@ class ReportPolicy
     {
         return $user->activo;
     }
+
+    public function transition(User $user, Report $report, ?int $activeTechnicianId): bool
+    {
+        return $user->activo && ($user->isLeader() || (
+            $user->roleName() === 'tecnico'
+            && $user->id === $activeTechnicianId
+            && ! $report->isClosed()
+            && in_array($report->estado_reporte, ['En curso', 'Diagnóstico'], true)
+        ));
+    }
 }

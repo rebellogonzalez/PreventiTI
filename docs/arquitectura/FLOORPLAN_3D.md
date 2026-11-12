@@ -23,7 +23,7 @@ Los recursos se editan directamente en `public/js/` y `public/css/`; las copias 
 - `activos`, categorías y responsables siguen siendo la fuente de verdad del inventario.
 - `activo_ubicaciones` determina la sala. La correspondencia usa el par exacto piso/sala, sin inferir ubicación a partir del número del activo.
 - `config/floorplan.php` describe dimensiones y funciones de los espacios. Son medidas de diseño esquemáticas, **no un relevamiento físico**.
-- Los 30 terminales ocupan dos sectores operativos contiguos y abiertos (17 + 13 según la base actual). Los escritorios se generan únicamente para terminales y notebooks registrados.
+- Los terminales se distribuyen en dos sectores operativos contiguos y abiertos. El plano muestra los dispositivos del inventario actual. Los retiros se consultan en **Inventario → Histórico de dispositivos**.
 - Hay seis notebooks en la sala técnica y cuatro en gerencia/coordinación. Uno de estos últimos pertenece al líder: se conserva esa ubicación registrada, sin trasladarlo silenciosamente para hacer coincidir el dibujo con una propuesta organizativa. Los otros tres corresponden a gerencia/administración. Dos notebooks de especialistas carecen de responsable en el inventario y se muestran como tales.
 - La recepción solo incorpora asientos/mesa decorativos y sus dos pantallas reales. IT, apoyo administrativo y accesos representan sus dispositivos reales; no se agregan servidores u otros equipos por el nombre de una sala.
 - Una ubicación nueva o ausente crea un espacio visual identificable como pendiente de configurar. Ningún activo desaparece por no coincidir con el plano inicial.

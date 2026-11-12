@@ -1,6 +1,6 @@
   <!-- 8. Modal: Agendar Nueva Tarea en Calendario -->
   <div id="modal-nueva-tarea-calendario" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+    <div class="calendar-task-dialog bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div class="flex items-center gap-2">
           <div class="p-2 rounded-lg bg-sky-100 text-sky-700"><i data-lucide="calendar-plus" class="w-5 h-5"></i></div>
@@ -12,14 +12,20 @@
       </div>
 
       <form id="form-nueva-tarea" class="mt-4 space-y-3.5 text-xs">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="tarea-fecha" class="block font-semibold text-slate-700 mb-1">Fecha Programada *</label>
-            <input type="date" id="tarea-fecha" required class="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Hora Estimada *</label>
-            <input type="time" id="tarea-hora" required value="10:00" class="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500">
+        <div>
+          <label for="tarea-fecha" class="block font-semibold text-slate-700 mb-1">Fecha Programada *</label>
+          <input type="date" id="tarea-fecha" required class="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500">
+        </div>
+        <div>
+          <label for="tarea-hora" class="block font-semibold text-slate-700 mb-1">Hora estimada (24 h) *</label>
+          <div class="calendar-task-time">
+            <input id="tarea-hora" type="text" inputmode="numeric" autocomplete="off" required
+              value="00:00" placeholder="00:00" pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+              title="Escribe cuatro cifras, por ejemplo 1430 para las 14:30."
+              class="font-mono py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500">
+            <button type="button" data-time-step="-60" aria-label="Restar una hora">−1 h</button>
+            <button type="button" data-time-step="60" aria-label="Sumar una hora">+1 h</button>
+            <button type="button" data-time-step="15" aria-label="Sumar quince minutos">+15 min</button>
           </div>
         </div>
 
@@ -28,7 +34,7 @@
           <input type="text" id="tarea-titulo" required placeholder="ej. Mantenimiento preventivo semestral switch principal" class="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500">
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Tipo de Actividad *</label>
             <select id="tarea-tipo" required class="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500 bg-white">
@@ -50,18 +56,32 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <label id="calendar-report-field" hidden>Reporte del dispositivo
+          <select id="calendar-report" class="w-full border rounded-lg p-2"></select>
+        </label>
+        <div class="calendar-task-assignees grid grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Técnico Asignado *</label>
             <select id="tarea-tecnico" required class="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500 bg-white">
               <!-- Dinámico -->
             </select>
           </div>
-          <div>
-            <label for="tarea-activo" class="block font-semibold text-slate-700 mb-1">Activo Asociado</label>
+          <div class="calendar-task-asset">
+            <label id="tarea-activo-label" for="tarea-activo" class="block font-semibold text-slate-700 mb-1">Activo asociado</label>
             <select id="tarea-activo" class="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500 bg-white">
               <!-- Dinámico -->
             </select>
+            <button type="button" id="tarea-activo-elegir" class="calendar-asset-trigger" aria-haspopup="dialog"
+              aria-controls="tarea-activo-dialog" aria-labelledby="tarea-activo-label tarea-activo-resumen">
+              <span id="tarea-activo-resumen">Buscar o elegir dispositivo</span>
+              <i data-lucide="search" aria-hidden="true" class="w-4 h-4"></i>
+            </button>
+            <dialog id="tarea-activo-dialog" class="calendar-asset-dialog" aria-labelledby="tarea-activo-titulo">
+              <header>
+                <h4 id="tarea-activo-titulo">Elegir dispositivo</h4>
+                <button type="button" autofocus>Cerrar</button>
+              </header>
+            </dialog>
           </div>
         </div>
 

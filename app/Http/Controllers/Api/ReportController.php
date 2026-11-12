@@ -6,21 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreReportRequest;
 use App\Http\Requests\AssignReportRequest;
 use App\Http\Requests\TransitionReportRequest;
+use App\Models\Asset;
 use App\Models\Report;
+use App\Models\Maintenance;
 use App\Models\TechnicalChief;
 use App\Models\Technician;
 use App\Models\User;
 use App\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use RuntimeException;
+use App\Services\ReportReadService;
 
 class ReportController extends Controller
 {
-    public function __construct(private readonly ReportService $reportService) {}
+    public function __construct(private readonly ReportService $reportService, private readonly ReportReadService $reader) {}
 
     private function user(Request $request): ?User
     {
@@ -31,18 +31,12 @@ class ReportController extends Controller
     {
         $user = $this->user($request);
         if (! $user) return response()->json(['success' => false, 'error' => 'No autenticado.'], 401);
-        $query = Report::with(['activos.categoria', 'creadores.nombres']);
-        if (! $user->hasHierarchyAtLeast(2)) {
-            $query->where(function ($query) use ($user) {
-                $query->whereHas('creadores', fn ($q) => $q->whereKey($user->id));
-                if ($user->isTechnician()) $query->orWhereIn('id', DB::table('tecnico_jefe_tecnico')->select('reporte_id')->where('tecnico_id', $user->id));
-            });
-        }
+        $query = $this->reader->query($user);
         if ($request->filled('prioridad')) {
             $urgency = match ($request->prioridad) {'Critica', 'Crítica' => 'Critico', 'Alta' => 'Alto', 'Baja' => 'Bajo', default => 'Medio'};
             $query->where('urgencia', $urgency);
         }
-        $reports = $query->orderByDesc('fecha_creacion')->get()->map(fn (Report $report) => $this->serialize($report));
+        $reports = $query->orderByDesc('fecha_creacion')->orderByDesc('id')->get()->map(fn (Report $report) => $this->reader->record($report, $user, $request->boolean('resumen')));
         return response()->json(['success' => true, 'data' => $reports, 'total' => $reports->count()]);
     }
 
@@ -52,17 +46,22 @@ class ReportController extends Controller
         if (! $user) return response()->json(['success' => false, 'error' => 'No autenticado.'], 401);
         $report = Report::with(['activos.categoria', 'creadores.nombres'])->findOrFail($id);
         if (! Gate::forUser($user)->allows('view', $report)) return response()->json(['success' => false, 'error' => "No posee autorización para consultar el reporte {$report->codigo}."], 403);
-        return response()->json(['success' => true, 'data' => $this->serialize($report)]);
+        $data = $this->reader->record($report, $user);
+        if ($user->canAccessArea('mantenimientos')) {
+            $data['inspections'] = Maintenance::where('reporte_id', $id)->orderByDesc('fecha_mantenimiento')
+                ->get()->map(fn ($item) => ['id' => $item->id, 'asset_id' => $item->activo_id, 'date' => $item->fecha_mantenimiento->toDateString()]);
+        }
+        return response()->json(['success' => true, 'data' => $data]);
     }
 
-    public function availableAssets(): JsonResponse
+    public function availableAssets(Request $request): JsonResponse
     {
         // Minimal catalog for reporting a fault; it does not expose inventory details.
-        $assets = \App\Models\Asset::with('categoria')->where('estado_activo', '!=', 'Retirado')->orderBy('id')->get();
+        $assets = Asset::inInventory()->inReportAreasFor($request->user())->with(['categoria', 'ubicacionDetalle'])->orderBy('id')->get();
         return response()->json(['success' => true, 'data' => $assets->map(fn ($asset) => [
             'id' => $asset->id, 'code' => $asset->codigo, 'name' => $asset->nombre,
             'category_name' => $asset->categoria?->nombre ?? 'Otros dispositivos',
-            'location_name' => $asset->ubicacion, 'active' => true,
+            'location_name' => $asset->ubicacionDetalle?->nombre ?? $asset->ubicacion, 'active' => true,
         ])]);
     }
 
@@ -71,12 +70,9 @@ class ReportController extends Controller
         $user = $this->user($request);
         if (! $user) return response()->json(['success' => false, 'error' => 'No autenticado.'], 401);
         if (! Gate::forUser($user)->allows('create', Report::class)) return response()->json(['success' => false, 'error' => 'No autorizado para crear reportes.'], 403);
-        try {
-            $report = $this->reportService->createReport((int) $request->asset_id, $user, $request->priority, $request->description);
-        } catch (RuntimeException $exception) {
-            return response()->json(['success' => false, 'error' => $exception->getMessage()], 422);
-        }
-        return response()->json(['success' => true, 'message' => "Reporte {$report->codigo} registrado y alerta generada.", 'data' => $this->serialize($report)], 201);
+        $report = $this->reportService->createReport((int) $request->asset_id, $user, $request->priority,
+            $request->description, $request->input('submission_id'));
+        return response()->json(['success' => true, 'message' => "Reporte {$report->codigo} registrado y alerta generada.", 'data' => $this->reader->record($report, $user)], 201);
     }
 
     /** The chief, and only the chief, decides the technical assignment. */
@@ -93,28 +89,25 @@ class ReportController extends Controller
             $chief,
             (int) $request->technician_id,
             $request->input('reassignment_reason'),
+            $request->input('expected_version'),
         );
 
-        return response()->json(['success' => true, 'message' => 'Asignación técnica registrada.', 'data' => $this->serialize($report)]);
+        return response()->json(['success' => true, 'message' => "Asignación guardada. Estado del reporte: {$report->estado_reporte}.", 'data' => $this->reader->record($report, $chief)]);
     }
 
-    /** The workflow is managed exclusively by the chief. */
     public function transition(TransitionReportRequest $request, int $id): JsonResponse
     {
-        $chief = $this->user($request);
-        if (! $chief || ! $chief->isLeader()) {
-            return response()->json(['success' => false, 'error' => 'Solo el Jefe Técnico puede cambiar el estado de un reporte.'], 403);
-        }
-
+        $actor = $request->user();
         $report = $this->reportService->transition(
             Report::findOrFail($id),
-            $chief,
+            $actor,
             $request->status,
             $request->input('action_report'),
             $request->input('final_diagnosis'),
+            $request->input('expected_version'),
         );
 
-        return response()->json(['success' => true, 'message' => "Reporte actualizado a {$report->estado_reporte}.", 'data' => $this->serialize($report)]);
+        return response()->json(['success' => true, 'message' => "Reporte actualizado a {$report->estado_reporte}.", 'data' => $this->reader->record($report, $actor)]);
     }
 
     public function technicians(Request $request): JsonResponse
@@ -139,54 +132,14 @@ class ReportController extends Controller
         return response()->json(['success' => true, 'data' => $technicians]);
     }
 
-    private function serialize(Report $report): array
+    public function history(Request $request): JsonResponse
     {
-        $activeAssignment = DB::table('tecnico_jefe_tecnico')
-            ->where('reporte_id', $report->id)
-            ->whereNull('fecha_finalizacion')
-            ->orderByDesc('fecha_asignacion')
-            ->first();
-        $assignmentHistory = DB::table('tecnico_jefe_tecnico')
-            ->where('reporte_id', $report->id)
-            ->orderBy('fecha_asignacion')
-            ->get()
-            ->map(function (object $assignment): array {
-                $technician = User::with('nombres')->find($assignment->tecnico_id);
-                return [
-                    'technician_id' => $assignment->tecnico_id,
-                    'technician_name' => $technician?->nombre ?? "Técnico {$assignment->tecnico_id}",
-                    'assigned_at' => $assignment->fecha_asignacion,
-                    'finished_at' => $assignment->fecha_finalizacion,
-                    'reassignment_reason' => $assignment->motivo_reasignacion,
-                ];
-            })->values();
-        $assignedTechnician = $activeAssignment ? User::with('nombres')->find($activeAssignment->tecnico_id) : null;
-
-        return [
-            'id' => $report->id,
-            'code' => $report->codigo,
-            'asset_id' => $report->activo_id,
-            'asset_code' => $report->activo?->codigo,
-            'asset_name' => $report->activo?->nombre,
-            'asset_category' => $report->activo?->categoria?->nombre,
-            'creator_id' => $report->creador_id,
-            'creator_name' => $report->creador?->nombre,
-            'creator_role' => $report->creador?->role_title,
-            'priority' => $report->prioridad,
-            'description' => $report->descripcion,
-            'status' => $report->estado_reporte,
-            'action_report' => $report->informe_accionar,
-            'final_diagnosis' => $report->diagnostico_final,
-            'closed_at' => $report->fecha_cierre?->format('Y-m-d H:i'),
-            'assigned_technician' => $assignedTechnician ? [
-                'id' => $assignedTechnician->id,
-                'name' => $assignedTechnician->nombre,
-                'specialty' => $assignedTechnician->especialidad,
-                'assigned_at' => $activeAssignment->fecha_asignacion,
-            ] : null,
-            'assignment_history' => $assignmentHistory,
-            'created_at' => $report->fecha_creacion?->format('Y-m-d H:i'),
-            'updated_at' => $report->updated_at?->format('Y-m-d H:i'),
-        ];
+        $filters = $request->validate([
+            'page' => 'sometimes|integer|min:1|max:1000000', 'sort' => 'nullable|in:oldest,newest',
+            'from' => 'nullable|date_format:Y-m-d', 'to' => 'nullable|date_format:Y-m-d',
+            'query' => 'nullable|string|max:2000', 'asset' => 'nullable|string|max:150',
+            'status' => 'nullable|string|max:50', 'technician' => 'nullable|string|max:32',
+        ]);
+        return response()->json($this->reader->history($request->user(), $filters));
     }
 }

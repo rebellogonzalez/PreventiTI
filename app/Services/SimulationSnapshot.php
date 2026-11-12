@@ -8,7 +8,7 @@ use RuntimeException;
 /** Explicit ownership: no truncation, ID reset, or inference from a person's name. */
 class SimulationSnapshot
 {
-    public const TABLES = ['maintenance_costs', 'alertas', 'tareas_calendario', 'mantenimientos', 'reportes', 'maintenance_budgets', 'auditorias'];
+    public const TABLES = ['maintenance_costs', 'alertas', 'mantenimientos', 'tareas_calendario', 'reportes', 'maintenance_budgets', 'auditorias'];
     public const PROTECTED = ['usuarios', 'usuario_nombres', 'usuario_direcciones', 'tecnicos', 'jefes_tecnicos', 'jefe_nombres', 'activos', 'categorias_activo', 'activo_ubicaciones', 'asset_map_positions'];
 
     public function record(string $table, int $id): array

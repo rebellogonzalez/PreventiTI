@@ -4,6 +4,7 @@ const sameId = (left, right) => left != null && right != null && String(left) ==
 function newestAssignmentFirst(left, right) {
   return dateValue(right.assigned_at).localeCompare(dateValue(left.assigned_at))
     || Number(!right.finished_at) - Number(!left.finished_at)
+    || Number(!right.reassignment_reason) - Number(!left.reassignment_reason)
     || dateValue(right.finished_at).localeCompare(dateValue(left.finished_at));
 }
 
@@ -11,7 +12,7 @@ function responsibleTechnician(report, assignments) {
   if (report.assigned_technician?.id != null) return report.assigned_technician.id;
 
   const candidates = assignments.filter(assignment => !assignment.finished_at);
-  const ordered = (candidates.length ? candidates : report.status === 'Finalizado' ? assignments : [])
+  const ordered = (candidates.length ? candidates : (report.closed || report.status === 'Finalizado') ? assignments : [])
     .slice().sort(newestAssignmentFirst);
   const latest = ordered[0];
   if (!latest || latest.reassignment_reason) return null;
@@ -49,7 +50,7 @@ export function buildTechnicianHistories(technicians, reports) {
         report,
         assignments: periods,
         lastAssignedAt: periods[0]?.assigned_at || null,
-        participation: isResponsible ? (report.status === 'Finalizado' ? 'solved' : 'current') : 'previous',
+        participation: isResponsible && report.status !== 'Cancelado' ? (report.closed || report.status === 'Finalizado' ? 'solved' : 'current') : 'previous',
       });
     }
   }

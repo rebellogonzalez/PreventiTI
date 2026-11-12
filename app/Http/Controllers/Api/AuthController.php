@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Audit;
 use App\Models\Technician;
 use App\Models\User;
+use App\Models\Report;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,17 +46,20 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['success' => true, ...$request->user()->sessionProfile()]);
+        return response()->json(['success' => true, ...$request->user()->sessionProfile(), ...$this->revisions($request->user())]);
     }
 
-    public function users(Request $request): JsonResponse
+    public function staffRevision(Request $request): JsonResponse
     {
-        abort_unless($request->user()->isAdmin(), 403);
-        $users = User::with('nombres')->orderBy('id')->get()->map(fn (User $user) => [
-            ...$user->sessionProfile()['user'], 'active' => $user->activo,
-            'sector' => $user->direccion ?? '',
-        ]);
-        return response()->json(['success' => true, 'data' => $users]);
+        return response()->json([...$this->revisions($request->user())])->header('Cache-Control', 'no-store');
+    }
+
+    private function revisions(User $user): array
+    {
+        // Operational writes and their audit entry commit together, including changes within the same second.
+        $audit = Audit::selectRaw('COUNT(*) AS total, MAX(id) AS latest')->first();
+        return ['staff_revision' => User::staffRevision(), 'report_revision' => Report::revisionFor($user),
+            'operation_revision' => hash('sha256', $audit->total.'/'.$audit->latest.'/'.now(Report::TIME_ZONE)->toDateString())];
     }
 
     public function taskAssignees(Request $request): JsonResponse

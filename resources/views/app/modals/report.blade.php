@@ -31,11 +31,11 @@
 
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Descripción Detallada de la Falla *</label>
-          <textarea id="reporte-descripcion-input" rows="3" required placeholder="Explique los síntomas observados, mensajes de error o comportamiento anormal..." class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500"></textarea>
+          <textarea id="reporte-descripcion-input" rows="3" minlength="5" maxlength="2000" required placeholder="Explique los síntomas observados, mensajes de error o comportamiento anormal..." class="w-full p-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500"></textarea>
         </div>
 
         <div class="p-3 bg-slate-50 rounded-lg text-slate-500 text-[11px]">
-          Al guardar, el reporte quedará registrado y se crearán notificaciones persistentes para administración y liderazgo técnico.
+          Al guardar, el reporte quedará registrado y se creará una alerta para jefatura técnica.
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-2">

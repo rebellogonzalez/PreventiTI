@@ -1,9 +1,12 @@
 import { escapeHTML } from '../lib/html.js';
+import { dayTasks, todayDate } from '../lib/calendar-dates.js';
+import { formatTimestamp } from '../lib/timestamps.js';
 
 export function createDashboard({ db, getCurrentUser }) {
+  let showAllAlerts = false;
   function renderDashboardView(container) {
     if (getCurrentUser().role === 'empleado') {
-      const open = db.reports.filter(report => report.status !== 'Finalizado').length;
+      const open = db.reports.filter(report => !report.closed && !['Finalizado', 'Cerrado', 'Cancelado', 'Resuelto'].includes(report.status)).length;
       container.innerHTML = `<div class="space-y-6"><div><h1 class="text-2xl font-bold text-slate-900">Mi espacio de trabajo</h1><p class="text-sm text-slate-500 mt-2">Registra una falla y consulta el seguimiento de tus reportes.</p></div><div class="flex gap-3"><button onclick="window.openModal('modal-nuevo-reporte')" class="px-4 py-2 rounded-lg bg-sky-600 text-white font-semibold">Crear reporte</button><a href="#reportes" class="px-4 py-2 rounded-lg border bg-white">Ver mis reportes</a></div><div class="grid sm:grid-cols-2 gap-4"><div class="bg-white border rounded-xl p-5"><p>Mis reportes</p><strong class="text-3xl">${db.reports.length}</strong></div><div class="bg-white border rounded-xl p-5"><p>En seguimiento</p><strong class="text-3xl">${open}</strong></div></div></div>`;
       return;
     }
@@ -16,7 +19,7 @@ export function createDashboard({ db, getCurrentUser }) {
     const unreadNotifications = notifications.filter(item => !item.read_at).length;
 
     // Tareas del día de hoy
-    const todayTasks = db.calendarTasks ? db.calendarTasks.filter(t => t.date === new Date().toLocaleDateString('en-CA')) : [];
+    const todayTasks = dayTasks(db.calendarTasks || [], todayDate()).filter(task => !task.cancel_reason);
 
     // Consumibles críticos (<= 20%)
     const lowConsumables = db.assets.filter(a => a.has_consumable && a.consumable_level !== null && a.consumable_level <= 20);
@@ -42,7 +45,7 @@ export function createDashboard({ db, getCurrentUser }) {
             <button onclick="window.openModal('modal-nuevo-reporte')" class="inline-flex items-center gap-2 px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold shadow-sm transition">
               <i data-lucide="plus-circle" class="w-4 h-4"></i> Reportar Falla
             </button>
-            <button data-permission="can_maintain_assets" onclick="window.openModal('modal-registrar-mantenimiento')" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm transition">
+            <button data-permission="can_maintain_assets" onclick="window.openInspection()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm transition">
               <i data-lucide="wrench" class="w-4 h-4"></i> Cargar Service
             </button>
             <a href="#calendario" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold shadow-sm transition">
@@ -174,7 +177,7 @@ export function createDashboard({ db, getCurrentUser }) {
             <span class="text-xs font-semibold text-slate-500">${unreadNotifications} sin leer</span>
           </div>
           <div class="divide-y divide-slate-100">
-            ${notifications.length === 0 ? '<div class="p-6 text-center text-xs text-slate-400">No hay notificaciones para este perfil.</div>' : notifications.slice(0, 8).map(item => `
+            ${notifications.length === 0 ? '<div class="p-6 text-center text-xs text-slate-400">No hay notificaciones para este perfil.</div>' : (showAllAlerts ? notifications : notifications.slice(0, 8)).map(item => `
               <button onclick="window.openNotification(${item.id})" class="w-full p-4 text-left hover:bg-slate-50 transition ${item.read_at ? '' : 'bg-amber-50/40'}">
                 <div class="flex items-start justify-between gap-4">
                   <div>
@@ -186,6 +189,7 @@ export function createDashboard({ db, getCurrentUser }) {
               </button>
             `).join('')}
           </div>
+          ${notifications.length > 8 ? `<button type="button" id="toggle-all-alerts" class="report-button report-button--secondary m-3" aria-expanded="${showAllAlerts}">${showAllAlerts ? 'Ver últimas 8' : 'Ver todas las alertas (' + notifications.length + ')'}</button>` : ''}
         </section>
 
           <!-- Insumos y Suministros en Umbral de Alerta -->
@@ -249,11 +253,11 @@ export function createDashboard({ db, getCurrentUser }) {
                   <div class="p-3 rounded-lg border ${t.priority === 'Critica' ? 'border-rose-200 bg-rose-50/50' : 'border-slate-100 bg-slate-50/70'} flex items-start justify-between gap-2 text-xs">
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2">
-                        <span class="font-mono text-[11px] font-bold text-slate-500">${escapeHTML(t.time)}</span>
+                        <span class="font-mono text-[11px] font-bold text-slate-500">${escapeHTML(t.time || '—')}</span>
                         <span class="font-semibold text-slate-900 truncate">${escapeHTML(t.title)}</span>
                       </div>
                       <div class="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
-                        <span class="font-medium text-slate-700">Resp: ${escapeHTML(t.technician)}</span>
+                        <span class="font-medium text-slate-700">Resp: ${escapeHTML(t.technician || 'Sin asignar')}</span>
                         <span>&bull;</span>
                         <span class="font-mono">${escapeHTML(t.asset)}</span>
                       </div>
@@ -278,7 +282,7 @@ export function createDashboard({ db, getCurrentUser }) {
                 <i data-lucide="calendar-clock" class="w-4 h-4 text-sky-600"></i>
                 <h3 class="text-sm font-bold text-slate-800">Próximos Vencimientos de Mantenimiento</h3>
               </div>
-              <a href="#mantenimientos" class="text-xs text-sky-600 font-medium hover:underline">Ver agenda &rarr;</a>
+              <a href="#calendario" class="text-xs text-sky-600 font-medium hover:underline">Ver agenda &rarr;</a>
             </div>
             <div class="mt-3 divide-y divide-slate-100">
               ${upcomingMaintenances.map(m => `
@@ -321,14 +325,14 @@ export function createDashboard({ db, getCurrentUser }) {
                 <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
                 <h3 class="text-sm font-bold text-slate-800">Bitácora de Auditoría Inalterable (RF-12)</h3>
               </div>
-              <span class="text-xs text-slate-400">Timestamp de servidor</span>
+              <span class="text-xs text-slate-400">Hora del servidor (UTC)</span>
             </div>
             <div class="mt-3 divide-y divide-slate-100 max-h-[260px] overflow-y-auto pr-1">
               ${db.auditLogs.slice(0, 6).map(log => `
                 <div class="py-2 text-xs">
                   <div class="flex items-center justify-between text-slate-700">
                     <span class="font-semibold text-slate-900">${escapeHTML(log.user_name)}</span>
-                    <span class="font-mono text-[10px] text-slate-400">${escapeHTML(log.timestamp)}</span>
+                    <span class="font-mono text-[10px] text-slate-400">${escapeHTML(formatTimestamp(log.timestamp, { timeZone: 'UTC' }))}</span>
                   </div>
                   <div class="text-slate-600 mt-0.5">
                     <span class="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-[10px] font-semibold text-slate-700 mr-1">${escapeHTML(log.action)}</span>
@@ -341,6 +345,12 @@ export function createDashboard({ db, getCurrentUser }) {
         </section>
       </div>
     `;
+    const toggle = container.querySelector?.('#toggle-all-alerts');
+    toggle?.addEventListener('click', () => {
+      showAllAlerts = !showAllAlerts;
+      window.renderCurrentRoute();
+      document.getElementById('toggle-all-alerts')?.focus();
+    });
   }
 
   return { renderDashboardView };
