@@ -6,6 +6,22 @@
 # ==============================================================================
 
 set -euo pipefail
+if [[ $(uname -s) != Linux || $EUID -ne 0 ]]; then
+    echo 'Ejecutar con sudo en el servidor Linux de destino.' >&2
+    exit 1
+fi
+APP_DIR="${APP_DIR:-/var/www/preventiti}"
+DEPLOY_USER="${DEPLOY_USER:-${SUDO_USER:-nacho}}"
+if [[ "$APP_DIR" != /var/www/* || ! -d "$APP_DIR" || -L "$APP_DIR" ]]; then
+    echo 'APP_DIR debe ser un directorio real de despliegue dentro de /var/www.' >&2
+    exit 1
+fi
+APP_DIR=$(realpath "$APP_DIR")
+[[ "$APP_DIR" == /var/www/* ]] || exit 1
+if [[ "$DEPLOY_USER" == www-data ]] || ! id "$DEPLOY_USER" >/dev/null 2>&1; then
+    echo 'DEPLOY_USER debe ser una cuenta administrativa existente, distinta de www-data.' >&2
+    exit 1
+fi
 
 echo "[+] Inicializando configuración de usuarios y permisos para PreventiTI..."
 
@@ -19,27 +35,25 @@ fi
 
 # 2. Agregar usuario web (www-data) y administrador al grupo
 usermod -aG app_preventiti www-data
-if id -u nacho >/dev/null 2>&1; then
-    usermod -aG app_preventiti nacho
-fi
+usermod -aG app_preventiti "$DEPLOY_USER"
 
 # 3. Asignar propiedad y permisos a los directorios de almacenamiento de Laravel
-APP_DIR="/var/www/preventiti"
-
 if [ -d "$APP_DIR" ]; then
     echo "[+] Ajustando permisos sobre $APP_DIR..."
-    chown -R www-data:app_preventiti "$APP_DIR"
+    chown -hR "$DEPLOY_USER":app_preventiti "$APP_DIR"
 
     # Permisos generales
-    find "$APP_DIR" -type d -exec chmod 755 {} \;
-    find "$APP_DIR" -type f -exec chmod 644 {} \;
+    find "$APP_DIR" -type d -exec chmod 2750 {} +
+    find "$APP_DIR" -type f -exec chmod u=rwX,g=rX,o= {} +
 
-    # Permisos de escritura para storage y bootstrap/cache (775 en carpetas, 664 en archivos)
-    chmod -R 775 "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
-    find "$APP_DIR/storage" -type f -exec chmod 664 {} \;
-    find "$APP_DIR/bootstrap/cache" -type f -exec chmod 664 {} \;
+    # www-data solo escribe en los directorios de ejecución de Laravel.
+    for directory in "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"; do
+        find "$directory" -type d -exec chmod 2770 {} +
+        find "$directory" -type f -exec chmod 660 {} +
+    done
+    if [[ -f "$APP_DIR/.env" ]]; then chmod 640 "$APP_DIR/.env"; fi
 
-    echo "[+] Permisos 775/664 aplicados correctamente en storage/ y bootstrap/cache/."
+    echo "[+] Código administrado por $DEPLOY_USER; escritura web limitada a storage y bootstrap/cache."
 else
     echo "[!] Advertencia: $APP_DIR no existe aún. Ejecutar cuando el código esté clonado."
 fi

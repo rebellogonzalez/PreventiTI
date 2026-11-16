@@ -7,6 +7,8 @@ Las rutas de código indicadas en los documentos parten de la raíz del proyecto
 | Organización y mantenimiento | [Estructura del proyecto](ESTRUCTURA.md) |
 | Ejecución y desarrollo frontend | [Guía frontend](guias/FRONTEND.md) |
 | Estado del servidor, puertos y copias reales | [Infraestructura operativa](guias/INFRAESTRUCTURA_OPERATIVA.md) |
+| Conexión activa, reglas SQL, respaldos y reversión | [Integración MariaDB 10.11.x](../infrastructure/database/db_connection_guide.md) |
+| Entrega del proyecto completo para Ubuntu y redes | [Archivos e instrucciones para Nacho](../ENTREGA_NACHO.md) |
 | CRUD de activos y verificación | [Alta, consulta, edición y baja lógica](guias/CRUD_ACTIVOS.md) |
 | Cuentas y permisos | [Accesos y roles](guias/ACCESOS_Y_ROLES.md) |
 | Datos de prueba y costos | [Simulación operativa y casos para comprobar](guias/SIMULACION_OPERATIVA.md) |

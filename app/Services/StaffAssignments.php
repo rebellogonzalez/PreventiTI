@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
 class StaffAssignments
 {
     /** Se ejecuta en la transacción que bloquea y deshabilita la cuenta. */
-    public function release(User $user): array
+    public function release(User $user, array $databaseReleasedReportIds = []): array
     {
         $pending = CalendarTask::where('technician_id', $user->id)->where('completed', false);
         $versioned = Schema::hasColumn('tareas_calendario', 'revision');
@@ -38,11 +38,11 @@ class StaffAssignments
         $assignments = DB::table('tecnico_jefe_tecnico')->where('tecnico_id', $user->id)->whereNull('fecha_finalizacion');
         $openIds = Report::open()->whereIn('id', (clone $assignments)->select('reporte_id'))
             ->orderBy('id')->lockForUpdate()->pluck('id');
-        $released = $assignments->whereIn('reporte_id', $openIds)->update([
+        $released = $databaseReleasedReportIds ? count(array_unique($databaseReleasedReportIds)) : $assignments->whereIn('reporte_id', $openIds)->update([
             'fecha_finalizacion' => now(), 'motivo_reasignacion' => 'Baja de la cuenta del técnico.',
         ]);
         // The earlier staff migration also uses this release before report versioning exists.
-        if ($released && Schema::hasColumn('reportes', 'revision_flujo')) {
+        if ($released && ! DatabaseWorkflow::enabled() && Schema::hasColumn('reportes', 'revision_flujo')) {
             Report::whereKey($openIds)->increment('revision_flujo');
         }
         $transferred = 0;

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\{OperationalSimulation, SimulationSnapshot};
+use App\Services\{BackupService, DatabaseWorkflow, OperationalSimulation, SimulationSnapshot};
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -10,13 +10,13 @@ use Throwable;
 
 class RefreshOperationalSimulation extends Command
 {
-    protected $signature = 'simulation:refresh {--date= : Fecha de referencia YYYY-MM-DD; por defecto hoy en Uruguay} {--legacy-manifest= : Manifiesto privado y revisado de datos de demostración antiguos} {--apply : Aplicar después de guardar una copia de la SQLite}';
+    protected $signature = 'simulation:refresh {--date= : Fecha de referencia YYYY-MM-DD; por defecto hoy en Uruguay} {--legacy-manifest= : Manifiesto privado y revisado de datos de demostración antiguos} {--apply : Aplicar después de guardar un respaldo}';
     protected $description = 'Renueva únicamente registros de simulación identificados y sin modificaciones posteriores.';
 
     public function handle(SimulationSnapshot $snapshot, OperationalSimulation $simulation): int
     {
         try {
-            if (! app()->environment(['local', 'testing']) || DB::getDriverName() !== 'sqlite') throw new \RuntimeException('Este comando está limitado al entorno local SQLite.');
+            if (! app()->environment(['local', 'testing']) || ! in_array(DB::getDriverName(), ['sqlite', 'mariadb'], true)) throw new \RuntimeException('Este comando está limitado al entorno local SQLite o MariaDB.');
             $value = $this->option('date') ?: CarbonImmutable::today('America/Montevideo')->toDateString();
             $date = CarbonImmutable::createFromFormat('!Y-m-d', $value, 'America/Montevideo');
             if (! $date || $date->toDateString() !== $value) throw new \RuntimeException('Fecha de referencia inválida.');
@@ -30,7 +30,11 @@ class RefreshOperationalSimulation extends Command
                 return self::SUCCESS;
             }
             $backup = null;
-            if (DB::connection()->getDatabaseName() !== ':memory:') {
+            if (DatabaseWorkflow::enabled()) {
+                $createdBackup = app(BackupService::class)->create();
+                $backup = app(BackupService::class)->downloadPath($createdBackup['filename']);
+                $this->info('Respaldo: '.$backup);
+            } elseif (DB::connection()->getDatabaseName() !== ':memory:') {
                 $folder = base_path('output/backups/simulacion-'.now()->format('Ymd-His').'-'.bin2hex(random_bytes(3)));
                 if (! mkdir($folder, 0700, true)) throw new \RuntimeException('No se pudo crear el respaldo.');
                 $backup = $folder.'/database.sqlite';

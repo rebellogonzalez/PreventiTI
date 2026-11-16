@@ -90,6 +90,17 @@ class ReportService
                 ->lockForUpdate()
                 ->first();
 
+            if (DatabaseWorkflow::enabled()) {
+                DatabaseWorkflow::context($chief, $reassignmentReason, fn () => DatabaseWorkflow::call(
+                    'asignar_tecnico', [$report->id, $technicianId, $chief->id, $reassignmentReason], 'technician_id',
+                ));
+                $name = $accounts->get($technicianId)->nombre;
+                Audit::create(['fecha_auditoria' => now(), 'descripcion' => $activeAssignment
+                    ? "Reporte {$report->codigo} reasignado por {$chief->nombre} a {$name}. Motivo: {$reassignmentReason}"
+                    : "Reporte {$report->codigo} asignado por {$chief->nombre} a {$name}."]);
+                return $report->fresh();
+            }
+
             if ($activeAssignment && (int) $activeAssignment->tecnico_id === $technician->id) {
                 // Older reports may already have a responsible technician while still in reception.
                 if ($report->estado_reporte === 'Recibido/Derivado') {
@@ -151,6 +162,9 @@ class ReportService
                 'No tienes permiso para cambiar el estado actual de este reporte.');
             abort_if($expectedVersion !== null && $expectedVersion !== $report->revision_flujo, 409,
                 'Otro usuario actualizó el reporte. Revisa los datos vigentes antes de guardar.');
+            if (DatabaseWorkflow::enabled()) {
+                return $this->transitionInDatabase($report, $actor, $nextStatus, $actionReport, $finalDiagnosis);
+            }
             $allowedTransitions = [
                 'Recibido/Derivado' => ['En curso'],
                 'En curso' => ['Diagnóstico', 'Finalizado'],
@@ -214,6 +228,31 @@ class ReportService
             'descripcion' => "Reporte {$report->codigo} cambiado a {$status} por {$actor->nombre}.",
         ]);
 
+        return $report->fresh();
+    }
+
+    private function transitionInDatabase(Report $report, User $actor, string $status, ?string $action, ?string $diagnosis): Report
+    {
+        $notes = $report->intervenciones ?? [];
+        if ($report->estado_reporte === 'Diagnóstico') {
+            if (! $notes && $report->informe_accionar) {
+                $notes[] = ['stage' => 'Diagnóstico', 'text' => $report->informe_accionar, 'diagnosis' => $report->diagnostico_final,
+                    'author_id' => null, 'author' => null, 'at' => null];
+            }
+            $action ??= $report->informe_accionar;
+        }
+        if ($status === 'En curso') $action = $diagnosis = null;
+        DatabaseWorkflow::context($actor, null, fn () => DatabaseWorkflow::call(
+            'cambiar_estado_reporte', [$report->id, $status, $action, $diagnosis], 'status',
+        ));
+        $report = $report->fresh();
+        if ($action) {
+            $notes[] = ['stage' => $status, 'text' => $action, 'diagnosis' => $diagnosis,
+                'author_id' => $actor->id, 'author' => $actor->nombre, 'at' => now(Report::TIME_ZONE)->format('Y-m-d H:i:s')];
+            $report->intervenciones = $notes;
+            $report->save();
+        }
+        Audit::create(['fecha_auditoria' => now(), 'descripcion' => "Reporte {$report->codigo} cambiado a {$status} por {$actor->nombre}."]);
         return $report->fresh();
     }
 }

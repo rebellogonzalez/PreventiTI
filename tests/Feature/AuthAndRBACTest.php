@@ -68,7 +68,7 @@ class AuthAndRBACTest extends TestCase
         $esteban = User::findOrFail(10);
         $tech = User::findOrFail(8);
         $audit = Audit::create(['fecha_auditoria' => now(), 'descripcion' => 'Reporte de prueba IDOR.']);
-        $report = Report::create(['auditoria_id' => $audit->id, 'estado_reporte' => 'Abierto', 'urgencia' => 'Medio', 'descripcion' => 'Falla en teclado numérico de caja.', 'fecha_creacion' => now()]);
+        $report = Report::create(['auditoria_id' => $audit->id, 'estado_reporte' => 'Recibido/Derivado', 'urgencia' => 'Medio', 'descripcion' => 'Falla en teclado numérico de caja.', 'fecha_creacion' => now()]);
         $report->activos()->attach(1);
         $report->creadores()->attach($laura->id);
         $this->actingAs($esteban)->getJson("/api/reportes/{$report->id}")->assertStatus(403);

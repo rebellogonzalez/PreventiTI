@@ -1,0 +1,10 @@
+# Referencia del diseño aprobado; no es un export importable de pfSense.
+# Completar con claves nuevas y configurar la interfaz/peer desde pfSense.
+[Interface]
+Address = 10.10.0.1/24
+ListenPort = 51820
+PrivateKey = REEMPLAZAR_CLAVE_PRIVADA_SERVIDOR
+
+[Peer]
+PublicKey = REEMPLAZAR_CLAVE_PUBLICA_PEER_AUTORIZADO
+AllowedIPs = 10.10.0.2/32

@@ -96,9 +96,12 @@ class UserController extends Controller
             abort_unless($target, 404);
             if (! $target->activo) return null;
 
+            $databaseReleasedReports = \App\Services\DatabaseWorkflow::enabled()
+                ? DB::table('tecnico_jefe_tecnico')->where('tecnico_id', $id)->whereNull('fecha_finalizacion')->pluck('reporte_id')->all()
+                : [];
             $target->forceFill(['activo' => false, 'remember_token' => null])->save();
             DB::table('sessions')->where('user_id', $id)->delete();
-            $impact = $assignments->release($target);
+            $impact = $assignments->release($target, $databaseReleasedReports);
             Audit::create(['fecha_auditoria' => now(), 'descripcion' => "Baja de cuenta {$id} por usuario {$actorId}."]);
             return $impact;
         }, 3);

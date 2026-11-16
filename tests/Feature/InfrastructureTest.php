@@ -25,8 +25,8 @@ class InfrastructureTest extends TestCase
     {
         $response = $this->actingAs(User::findOrFail(1))->getJson('/api/infraestructura/status')->assertOk();
         $response->assertJsonPath('data.server.php', PHP_VERSION)->assertJsonPath('data.server.os', PHP_OS_FAMILY)
-            ->assertJsonPath('data.database.available', true)->assertJsonPath('data.database.driver', 'sqlite')
-            ->assertJsonPath('data.backup_support.available', false)->assertJsonPath('data.latest_backup', null);
+            ->assertJsonPath('data.database.available', true)->assertJsonPath('data.database.driver', \Illuminate\Support\Facades\DB::getDriverName())
+            ->assertJsonPath('data.backup_support.available', \App\Services\DatabaseWorkflow::enabled())->assertJsonPath('data.latest_backup', null);
         $this->assertArrayNotHasKey('vpn', $response->json('data'));
         $this->assertArrayNotHasKey('firewall', $response->json('data'));
     }

@@ -55,6 +55,9 @@ class AssetRetirementTest extends TestCase
     public function test_old_retirement_without_a_recorded_condition_does_not_assume_the_asset_works(): void
     {
         Asset::findOrFail(1)->update(['estado_activo' => 'Retirado']);
+        // Imported retirements may lack their preceding condition. A new SQL
+        // transition now records it automatically, so reproduce that old NULL.
+        if (\App\Services\DatabaseWorkflow::enabled()) Asset::whereKey(1)->update(['estado_previo_retiro' => null]);
         $this->actingAs(User::findOrFail(1))->patchJson('/api/activos/1/toggle', ['expected_state' => 'Retirado'])->assertOk();
         $this->assertDatabaseHas('activos', ['id' => 1, 'estado_activo' => 'Fuera de Servicio']);
     }
@@ -100,7 +103,8 @@ class AssetRetirementTest extends TestCase
 
     public function test_legacy_retirements_and_new_devices_without_history_are_archived(): void
     {
-        Asset::findOrFail(1)->update(['estado_activo' => ' retirado ']);
+        $this->assertTrue((new Asset(['estado_activo' => ' retirado ']))->retirado);
+        Asset::findOrFail(1)->update(['estado_activo' => \App\Services\DatabaseWorkflow::enabled() ? 'Retirado' : ' retirado ']);
         Asset::findOrFail(2)->update(['estado_activo' => 'Fuera de Servicio']);
         $this->actingAs(User::findOrFail(1));
         $asset = $this->postJson('/api/activos', [

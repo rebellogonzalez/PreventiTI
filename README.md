@@ -43,6 +43,10 @@ Sistema web integral desarrollado en **Laravel 13 (PHP 8.3+)** para el monitoreo
 
 Consultar [la estructura y los criterios de mantenimiento](docs/ESTRUCTURA.md) y [el índice documental](docs/README.md). El JavaScript propio se edita en `public/`. Tailwind y las bibliotecas visuales se generan localmente con `npm run build`; sus archivos ya están incluidos en `public/`, por lo que la aplicación funciona sin acceso a CDN. Ver [guía frontend](docs/guias/FRONTEND.md).
 
+La instalación local utiliza **MariaDB 10.11.19**, con los datos originales preservados y reglas de negocio en la base. Configuración privada, operación del servicio, pruebas, respaldos y reversión a SQLite: [guía de integración MariaDB](infrastructure/database/db_connection_guide.md). Los datos y las credenciales quedan fuera de Git.
+
+Entrega para Ubuntu y redes: [archivos exactos para Nacho y orden de instalación](ENTREGA_NACHO.md). Incluye plantillas Linux y verificación del respaldo; la entrega privada se distribuye por separado.
+
 ---
 
 ## 🚀 Puesta en Marcha en Desarrollo

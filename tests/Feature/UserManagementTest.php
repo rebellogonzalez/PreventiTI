@@ -95,7 +95,9 @@ class UserManagementTest extends TestCase
         $oldChief->forceFill(['remember_token' => 'old-token', 'password' => 'Clave anterior 123'])->save();
         DB::table('sessions')->insert(['id' => 'old-session', 'user_id' => 4, 'payload' => '', 'last_activity' => time()]);
         $finished = Report::where('jefe_id', 4)->firstOrFail();
-        $finished->update(['estado_reporte' => 'Finalizado', 'fecha_cierre' => now()]);
+        $reports = app(\App\Services\ReportService::class);
+        $reports->assignTechnician($finished, $oldChief, 5, null);
+        $reports->transition($finished->fresh(), $oldChief, 'Finalizado', 'Solución registrada antes de la baja.', null);
         $openIds = Report::open()->where('jefe_id', 4)->pluck('id');
         $this->assertNotEmpty($openIds);
         $this->deleteJson('/api/auth/users/4')->assertOk();

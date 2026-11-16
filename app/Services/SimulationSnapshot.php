@@ -16,7 +16,7 @@ class SimulationSnapshot
         if (! in_array($table, [...self::TABLES, 'consumibles'], true)) throw new RuntimeException('Tabla no autorizada en el manifiesto.');
         $row = DB::table($table)->where('id', $id)->first();
         if (! $row) throw new RuntimeException("Falta {$table} #{$id}; se conserva la base sin cambios.");
-        $data = ['row' => (array) $row];
+        $data = ['row' => $this->portableRow((array) $row)];
         $relations = match ($table) {
             'reportes' => ['reporte_activo' => 'reporte_id', 'usuario_reporte' => 'reporte_id', 'tecnico_jefe_tecnico' => 'reporte_id', 'mantenimientos' => 'reporte_id', 'alertas' => 'reporte_id'],
             'alertas' => ['activo_alerta' => 'alerta_id'],
@@ -71,8 +71,22 @@ class SimulationSnapshot
 
     private function sorted(array $rows): array
     {
-        $rows = array_map(fn ($row) => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), $rows);
+        $rows = array_map(fn ($row) => json_encode($this->portableRow((array) $row), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), $rows);
         sort($rows, SORT_STRING);
         return $rows;
+    }
+
+    private function portableRow(array $row): array
+    {
+        // The generated index column is not historical business data. Preserve
+        // existing manifest hashes across the engine change and DATE precision.
+        unset($row['reporte_vigente']);
+        foreach ($row as $key => $value) {
+            if (is_string($value) && preg_match('/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.0{1,6}$/', $value)) {
+                $row[$key] = strstr($value, '.', true);
+            }
+        }
+        if (isset($row['nivel']) && is_numeric($row['nivel'])) $row['nivel'] += 0;
+        return $row;
     }
 }

@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         ]);
+        $middleware->api(append: [\App\Http\Middleware\DatabaseAuditContext::class]);
 
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,

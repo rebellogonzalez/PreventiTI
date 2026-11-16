@@ -1,5 +1,7 @@
 # Duplicación de la base actual a MariaDB
 
+Documento histórico del 12 de noviembre. La conexión activa y las reglas implementadas el 15 de noviembre se describen en la [guía de integración MariaDB](db_connection_guide.md); las limitaciones que siguen corresponden a aquella copia anterior.
+
 - **Origen:** `database/database.sqlite` (SQLite, abierto en modo solo lectura).
 - **DDL de referencia:** `infrastructure/database/mariadb_schema.sql` (sin modificar).
 - **Copia generada:** `database/backups/preventiti_copia_mariadb_2026_11_12.sql`.

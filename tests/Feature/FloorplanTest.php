@@ -22,7 +22,7 @@ class FloorplanTest extends TestCase
     public function test_map_uses_current_inventory_and_preserves_locations(): void
     {
         $data = $this->actingAs(\App\Models\User::findOrFail(1))->getJson('/api/floorplan')->assertOk()->json('data');
-        $this->assertCount(68, $data['assets']);
+        $this->assertCount(69, $data['assets']);
         $this->assertCount(8, $data['rooms']);
         $this->assertEquals(Asset::inInventory()->orderBy('id')->pluck('id')->all(), array_column($data['assets'], 'id'));
         $leaderNotebook = collect($data['assets'])->firstWhere('id', 30);
@@ -37,7 +37,7 @@ class FloorplanTest extends TestCase
         Location::where('activo_id', 2)->delete();
         Asset::findOrFail(2)->update(['ubicacion' => null]);
         $data = $this->actingAs(\App\Models\User::findOrFail(1))->getJson('/api/floorplan')->assertOk()->json('data');
-        $this->assertCount(68, $data['assets']);
+        $this->assertCount(69, $data['assets']);
         $this->assertCount(10, $data['rooms']);
         $this->assertCount(2, array_filter($data['rooms'], fn ($r) => $r['unconfigured'] ?? false));
     }
@@ -80,7 +80,12 @@ class FloorplanTest extends TestCase
         $asset = $report->activos()->firstOrFail();
         $data = $this->actingAs(\App\Models\User::findOrFail(1))->getJson('/api/floorplan')->json('data.assets');
         $this->assertGreaterThan(0, collect($data)->firstWhere('id', $asset->id)['active_incidents']);
-        $asset->reportes()->update(['estado_reporte' => 'Finalizado']);
+        foreach ($asset->reportes as $pending) {
+            $service = app(\App\Services\ReportService::class);
+            $chief = \App\Models\User::findOrFail(4);
+            $service->assignTechnician($pending, $chief, 5, null);
+            $service->transition($pending->fresh(), $chief, 'Finalizado', 'Se verificó el funcionamiento.', null);
+        }
         $data = $this->getJson('/api/floorplan')->json('data.assets');
         $this->assertSame(0, collect($data)->firstWhere('id', $asset->id)['active_incidents']);
         $this->assertSame([], collect($data)->firstWhere('id', $asset->id)['reports']);

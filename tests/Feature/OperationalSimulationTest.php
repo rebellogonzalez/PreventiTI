@@ -57,7 +57,7 @@ class OperationalSimulationTest extends TestCase
             $this->assertTrue($report->fecha_cierre->greaterThan($report->fecha_creacion));
             $this->assertDatabaseHas('mantenimientos', ['reporte_id' => $report->id]);
         }
-        $this->assertSame([], DB::select('PRAGMA foreign_key_check'));
+        $this->assertForeignKeyIntegrity();
         $this->assertSame(0, DB::table('reportes')->join('reporte_activo', 'reportes.id', '=', 'reporte_id')->join('activos', 'activos.id', '=', 'activo_id')->whereRaw('date(fecha_creacion) < date(fecha_alta)')->count());
         $this->assertSame(0, DB::table('mantenimientos')->join('activos', 'activos.id', '=', 'activo_id')->whereRaw('date(fecha_mantenimiento) < date(fecha_alta)')->count());
         $this->assertGreaterThan(0, CalendarTask::whereDate('fecha', '2026-10-22')->count());

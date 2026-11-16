@@ -17,6 +17,11 @@ class BackupService
 
     public function support(): array
     {
+        if (DatabaseWorkflow::enabled()) {
+            $supported = class_exists(ZipArchive::class) && app(MariaDbDump::class)->available();
+            return ['available' => $supported, 'scope' => 'Base MariaDB completa (datos, claves, índices, triggers y rutinas) y archivos de storage/app. No incluye credenciales de conexión.',
+                'reason' => $supported ? null : 'El respaldo MariaDB requiere zip, mariadb-dump y un archivo privado de conexión.'];
+        }
         $supported = class_exists(SQLite3::class) && class_exists(ZipArchive::class) && DB::getDriverName() === 'sqlite' && DB::connection()->getDatabaseName() !== ':memory:';
         return ['available' => $supported, 'scope' => 'Base SQLite completa y archivos de storage/app. No incluye código ni configuración secreta del servidor.',
             'reason' => $supported ? null : 'Este respaldo requiere una base SQLite en archivo y las extensiones PHP sqlite3 y zip. Para otro motor se necesita un procedimiento de respaldo específico.'];
@@ -43,9 +48,11 @@ class BackupService
         try {
             if (! mkdir($work, 0700)) throw new RuntimeException('No se pudo preparar el respaldo.');
             $started = now()->toIso8601String();
-            $snapshot = $work.'/database.sqlite';
+            $driver = DatabaseWorkflow::enabled() ? 'mariadb' : 'sqlite';
+            $databaseFile = $driver === 'mariadb' ? 'database.sql' : 'database.sqlite';
+            $snapshot = $work.'/'.$databaseFile;
             $this->snapshot($snapshot);
-            $entries = [['path' => 'database/database.sqlite', 'source' => $snapshot]];
+            $entries = [['path' => 'database/'.$databaseFile, 'source' => $snapshot]];
             $storage = (string) config('infrastructure.backup_files_directory');
             $files = $this->files($storage);
             foreach ($files as $relative => $file) {
@@ -55,8 +62,8 @@ class BackupService
                 chmod($copy, 0600);
                 $entries[] = ['path' => 'storage/app/'.$relative, 'source' => $copy];
             }
-            $manifest = ['version' => 1, 'started_at' => $started, 'database' => 'sqlite', 'scope' => $support['scope'],
-                'consistency' => 'Instantánea SQLite transaccional. Archivos copiados durante la ventana del respaldo; no es una transacción conjunta de base y archivos.',
+            $manifest = ['version' => 1, 'started_at' => $started, 'database' => $driver, 'scope' => $support['scope'],
+                'consistency' => ($driver === 'mariadb' ? 'Volcado InnoDB con single-transaction, triggers y rutinas; requiere no ejecutar DDL durante la copia.' : 'Instantánea SQLite transaccional.').' Archivos copiados durante la ventana del respaldo; no es una transacción conjunta de base y archivos.',
                 'files' => array_map(fn ($entry) => ['path' => $entry['path'], 'bytes' => filesize($entry['source']), 'sha256' => hash_file('sha256', $entry['source'])], $entries)];
             $zip = new ZipArchive();
             $archive = $work.'/archive.zip';
@@ -75,7 +82,7 @@ class BackupService
                 if (! hash_equals(hash_file('sha256', $work.'/files/'.$relative), (string) @hash_file('sha256', $source))) throw new RuntimeException('Un archivo cambió durante el respaldo. Vuelva a intentarlo.');
             }
             $metadata = ['filename' => $filename, 'created_at' => now()->utc()->format('Y-m-d\TH:i:s.u\Z'), 'started_at' => $started, 'bytes' => filesize($archive),
-                'sha256' => hash_file('sha256', $archive), 'verified' => true, 'database' => 'sqlite', 'storage_files' => count($files), 'scope' => $support['scope'],
+                'sha256' => hash_file('sha256', $archive), 'verified' => true, 'database' => $driver, 'storage_files' => count($files), 'scope' => $support['scope'],
                 'download_url' => '/api/infraestructura/backups/'.$filename.'/download'];
             chmod($archive, 0600);
             $json = $work.'/metadata.json';
@@ -94,6 +101,10 @@ class BackupService
 
     protected function snapshot(string $destination): void
     {
+        if (DatabaseWorkflow::enabled()) {
+            app(MariaDbDump::class)->snapshot($destination);
+            return;
+        }
         $path = DB::connection()->getDatabaseName();
         if (! is_file($path)) throw new RuntimeException('No se encontró el archivo SQLite configurado.');
         $source = new SQLite3($path, SQLITE3_OPEN_READONLY);

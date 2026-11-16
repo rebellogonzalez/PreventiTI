@@ -6,11 +6,17 @@
 # ==============================================================================
 
 set -euo pipefail
+export LC_ALL=C
+if [[ $(uname -s) != Linux ]]; then
+    echo 'Este control requiere Linux y systemd.' >&2
+    exit 1
+fi
+PHP_FPM_SERVICE="${PHP_FPM_SERVICE:-php8.4-fpm}"
 
 echo "========================================================"
 echo " PREVENTITI — AUDITORÍA DE SALUD DEL SERVIDOR UBUNTU"
 echo " Fecha: $(date)"
-echo " Host: $(hostname) ($(hostname -I 2>/dev/null || echo '192.168.20.10'))"
+echo " Host: $(hostname) ($(hostname -I))"
 echo "========================================================"
 
 # 1. Monitoreo de CPU
@@ -28,12 +34,15 @@ DISK_USAGE=$(df -h / | awk 'NR==2 {print $5}' | tr -d '%')
 echo "[DISCO] Partición raíz (/): ${DISK_USAGE}% en uso"
 
 # 4. Verificación de servicios críticos
-for service in nginx php8.2-fpm mariadb; do
+failed=0
+for service in nginx "$PHP_FPM_SERVICE" mariadb; do
     if systemctl is-active --quiet "$service" 2>/dev/null; then
         echo "[SERVICIO] $service: ACTIVO (En ejecución)"
     else
-        echo "[SERVICIO] $service: NO DETECTADO O INACTIVO (Modo Laboratorio/Simulación)"
+        echo "[SERVICIO] $service: INACTIVO O NO INSTALADO"
+        failed=1
     fi
 done
 
 echo "========================================================"
+exit "$failed"

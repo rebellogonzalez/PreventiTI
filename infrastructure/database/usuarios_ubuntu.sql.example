@@ -1,0 +1,9 @@
+-- Completar las DOS contraseñas antes de ejecutar con sudo mariadb.
+-- Crear únicamente en el servidor nuevo. Si ya existen base o cuentas, se detiene.
+-- No contiene datos ni contraseñas del Mac.
+CREATE DATABASE preventiti CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'preventiti_app'@'localhost' IDENTIFIED BY 'REEMPLAZAR_CONTRASENA_APP';
+GRANT SELECT,INSERT,UPDATE,DELETE,EXECUTE ON preventiti.* TO 'preventiti_app'@'localhost';
+CREATE USER 'preventiti_backup'@'localhost' IDENTIFIED BY 'REEMPLAZAR_CONTRASENA_BACKUP';
+GRANT SELECT,SHOW VIEW,TRIGGER,EVENT ON preventiti.* TO 'preventiti_backup'@'localhost';
+GRANT SELECT ON mysql.proc TO 'preventiti_backup'@'localhost';

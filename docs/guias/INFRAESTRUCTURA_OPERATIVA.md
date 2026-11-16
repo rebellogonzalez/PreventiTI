@@ -1,4 +1,4 @@
-# Infraestructura operativa — 22 de octubre de 2026
+# Infraestructura operativa — actualizado el 15 de noviembre de 2026
 
 El módulo consulta el servidor que ejecuta la aplicación: sistema operativo, versión PHP, conexión de lectura con la base, espacio de disco, carga media del sistema y memoria de la petición PHP. Cada lectura lleva su fecha; se actualiza al abrir la vista o pulsar **Actualizar estado**. La carga media no representa un porcentaje de CPU y la memoria de PHP no es la RAM total.
 
@@ -10,13 +10,13 @@ La topología aprobada de VLAN 10, VLAN 20, pfSense y WireGuard se conserva como
 
 ## Respaldos reales
 
-**Crear respaldo** guarda una instantánea consistente de la SQLite activa mediante la API de respaldo de SQLite e incluye los archivos normales de `storage/app`. Soporta datos confirmados en WAL. Se comprueba la integridad y claves foráneas de la copia, se construye un ZIP y se relee cada archivo para comparar su tamaño y SHA-256. El manifiesto indica la ventana de copia: base y archivos no forman una única transacción conjunta.
+**Crear respaldo** utiliza el motor activo. Con MariaDB 10.11.x genera un volcado InnoDB transaccional con datos, claves, índices, triggers y rutinas mediante `mariadb-dump`. Con SQLite persistente utiliza su API de respaldo, incluidos datos confirmados en WAL, y comprueba integridad y claves foráneas. Ambos incluyen los archivos normales de `storage/app` y un manifiesto SHA-256; el ZIP se relee para comprobar tamaños y hashes. Base y archivos no forman una única transacción conjunta. No ejecutar DDL durante el volcado MariaDB.
 
-Las copias quedan fuera de `public/` y de los discos de archivos servibles, en `storage/backups/preventiti`, con directorio privado y archivos restringidos. La descarga exige una sesión de administrador o jefe técnico y vuelve a verificar el SHA-256. Se impiden rutas arbitrarias, enlaces simbólicos y respaldos simultáneos. Si falla una comprobación, no se informa éxito. Las copias anteriores no se eliminan ni rotan automáticamente.
+Las copias quedan fuera de `public/` y de los discos servibles, con directorio privado y archivos restringidos. El destino se configura mediante `PREVENTITI_BACKUP_DIRECTORY`; por defecto es `storage/backups/preventiti`. La integración local usa una carpeta privada fuera del repositorio. La descarga exige administrador o jefe técnico y vuelve a verificar el SHA-256. Se impiden rutas arbitrarias, enlaces simbólicos y respaldos simultáneos. Las copias anteriores no se eliminan ni rotan automáticamente.
 
-Requisitos: base SQLite persistente y extensiones PHP `sqlite3` y `zip`. Para MariaDB u otro motor el módulo informa que requiere un procedimiento específico; no inventa un dump. El script histórico MariaDB sigue conservado en `infrastructure/scripts/respaldo_preventiti.sh`, pero no se ejecuta desde la interfaz. Los ZIP no incluyen código, `.env`, configuración de red ni servicios externos. Conviene descargar una copia fuera del servidor; un archivo en el mismo disco no protege frente a la pérdida de ese disco.
+Requisitos: PHP `zip` y, según el motor, `sqlite3` o un ejecutable `mariadb-dump` y archivo privado de conexión configurados. La instalación local utiliza una cuenta lectora específica para respaldos. El script histórico `infrastructure/scripts/respaldo_preventiti.sh` se conserva como referencia, sin ejecutarse desde la interfaz. Los ZIP no incluyen código, `.env`, cuentas del servidor ni configuración de red; conservar también la configuración privada y una copia fuera del disco del servidor.
 
-Antes de cualquier restauración, extraer en otra ubicación, verificar el manifiesto y comprobar la SQLite extraída. Nunca sobrescribir automáticamente la base activa: puede contener registros posteriores al respaldo. Las pruebas automatizadas restauran una copia ficticia y verifican los datos recuperados.
+Antes de restaurar, extraer en otra ubicación y verificar el manifiesto. Comprobar la SQLite extraída o cargar el SQL MariaDB en una base vacía de prueba. Nunca sobrescribir automáticamente la base activa: puede contener registros posteriores. Las pruebas restauran datos y verifican triggers y rutinas. Procedimiento y evidencia: [integración MariaDB](../../infrastructure/database/db_connection_guide.md).
 
 ## Baja lógica y condición operativa
 

@@ -1,0 +1,7 @@
+# Completar en el destino; guardar fuera de Git, en /etc/preventiti/backup.cnf.
+[client]
+user=preventiti_backup
+password=REEMPLAZAR_POR_CONTRASENA_NUEVA
+protocol=SOCKET
+socket=/run/mysqld/mysqld.sock
+default-character-set=utf8mb4

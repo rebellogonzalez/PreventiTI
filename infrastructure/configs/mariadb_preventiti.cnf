@@ -1,0 +1,9 @@
+# Copiar en /etc/mysql/mariadb.conf.d/60-preventiti.cnf.
+# Aplicación y MariaDB deben estar en el mismo servidor.
+[mariadbd]
+socket=/run/mysqld/mysqld.sock
+skip-networking
+skip-name-resolve
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+default-time-zone=+00:00

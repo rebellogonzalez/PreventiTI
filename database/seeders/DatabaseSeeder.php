@@ -100,7 +100,9 @@ class DatabaseSeeder extends Seeder
             $locationId = $assetLocationOverrides[$entry['id']] ?? $entry['location_id'];
             $location = $locations->get($locationId);
             $locationName = trim(($location['piso'] ?? '').' - '.($location['sala'] ?? ''), ' -');
-            $asset = new Asset(['categoria_id' => $entry['category_id'], 'serial' => $entry['serial'], 'ubicacion' => $locationName, 'descripcion' => "Código legado: {$entry['code']}. Nombre legado: {$entry['name']}. Responsable legado: {$entry['responsible']}.", 'estado_activo' => ! empty($entry['active']) ? $entry['state'] : 'Retirado', 'fecha_alta' => '2026-01-01', 'frecuencia_service' => $entry['periodicity_days']]);
+            // The source's inactive device is explicitly Fuera de Servicio;
+            // inactivity does not document a patrimonial retirement or its date.
+            $asset = new Asset(['categoria_id' => $entry['category_id'], 'serial' => $entry['serial'], 'ubicacion' => $locationName, 'descripcion' => "Código legado: {$entry['code']}. Nombre legado: {$entry['name']}. Responsable legado: {$entry['responsible']}.", 'estado_activo' => $entry['state'], 'fecha_alta' => '2026-01-01', 'frecuencia_service' => $entry['periodicity_days']]);
             // IDs are part of the traceability of reports and maintenance records, so retain the supplied IDs.
             $asset->id = $entry['id'];
             $asset->responsable_id = $usersByName->get($entry['responsible'])?->id;

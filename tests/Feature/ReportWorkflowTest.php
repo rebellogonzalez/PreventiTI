@@ -42,7 +42,7 @@ class ReportWorkflowTest extends TestCase
 
     public function test_all_filters_match_the_saved_priority_and_out_of_service_devices_accept_reports(): void
     {
-        Asset::whereKey(1)->update(['estado_activo' => 'Fuera de servicio']);
+        Asset::whereKey(1)->update(['estado_activo' => 'Fuera de Servicio']);
         $this->getJson('/api/reportes/activos-disponibles')->assertOk()->assertJsonFragment(['id' => 1]);
         foreach (['Baja', 'Media', 'Alta', 'Critica'] as $priority) {
             $id = $this->postJson('/api/reportes', $this->payload($priority))->assertCreated()
@@ -94,6 +94,20 @@ class ReportWorkflowTest extends TestCase
             DB::table('tecnico_jefe_tecnico')->insert([
                 'reporte_id' => $id, 'tecnico_id' => 5, 'jefe_id' => 4, 'fecha_asignacion' => now()->subDay(),
             ]);
+            if (\App\Services\DatabaseWorkflow::enabled()) {
+                $this->actingAs(User::findOrFail(5))->getJson("/api/reportes/$id")->assertOk()
+                    ->assertJsonPath('data.status', 'En curso')->assertJsonPath('data.can_update_status', true)->assertJsonPath('data.version', 1);
+                $this->actingAs(User::findOrFail(4));
+                $this->patchJson($path, ['technician_id' => $selected, 'expected_version' => 0])->assertConflict();
+                $data = ['technician_id' => $selected, 'expected_version' => 1];
+                $this->patchJson($path, $data)->assertUnprocessable();
+                if ($selected !== 5) {
+                    $this->patchJson($path, $data + ['reassignment_reason' => 'Cambio de turno.'])->assertOk()
+                        ->assertJsonPath('data.status', 'En curso')->assertJsonPath('data.version', 2)
+                        ->assertJsonPath('data.assigned_technician.id', $selected)->assertJsonCount(2, 'data.assignment_history');
+                }
+                continue;
+            }
             $this->actingAs(User::findOrFail(5))->getJson("/api/reportes/$id")->assertOk()->assertJsonPath('data.can_update_status', false);
             $this->patchJson("/api/reportes/$id/estado", ['status' => 'En curso'])->assertForbidden();
             $this->actingAs(User::findOrFail(4));
@@ -151,6 +165,25 @@ class ReportWorkflowTest extends TestCase
     public function test_legacy_solution_is_visible_and_closed_records_cannot_be_changed(): void
     {
         $id = $this->postJson('/api/reportes', $this->payload())->assertCreated()->json('data.id');
+        if (\App\Services\DatabaseWorkflow::enabled()) {
+            $path = "/api/reportes/$id";
+            $this->patchJson($path.'/asignacion', ['technician_id' => 5])->assertOk();
+            $this->patchJson($path.'/estado', ['status' => 'Finalizado', 'action_report' => 'Solución anterior.'])->assertOk();
+            foreach (['Resuelto', 'Cerrado', 'Cancelado'] as $status) {
+                // The reader must understand imported states; the new SQL
+                // graph deliberately rejects creating them as new transitions.
+                $legacy = Report::findOrFail($id);
+                $legacy->estado_reporte = $status;
+                $legacy->informe_accionar = null;
+                $record = app(\App\Services\ReportReadService::class)->record($legacy, User::findOrFail(4));
+                $this->assertTrue($record['closed']);
+                $this->assertSame('Solución anterior.', $record['action_report']);
+            }
+            $this->getJson($path)->assertJsonPath('data.closed', true)->assertJsonPath('data.action_report', 'Solución anterior.');
+            $this->patchJson($path.'/asignacion', ['technician_id' => 5])->assertUnprocessable();
+            $this->patchJson($path.'/estado', ['status' => 'En curso'])->assertUnprocessable();
+            return;
+        }
         foreach (['Resuelto', 'Cerrado', 'Cancelado'] as $status) {
             Report::whereKey($id)->update(['estado_reporte' => $status, 'resolucion' => 'Solución anterior.']);
             $path = "/api/reportes/$id";
